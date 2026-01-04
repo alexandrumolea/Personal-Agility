@@ -75,9 +75,13 @@ struct ProjectDetailView: View {
                                             Button {
                                                 withAnimation { project.imageData = nil }
                                             } label: {
-                                                Image(systemName: "trash.circle.fill")
-                                                    .font(.title)
-                                                    .foregroundColor(.red)
+                                                Image(systemName: "trash")
+                                                    .fontWeight(.medium)
+                                                    .padding(8)
+                                                    .background(.regularMaterial)
+                                                    .clipShape(Circle())
+                                                    .foregroundColor(.primary)
+                                                    .shadow(radius: 3)
                                                     .padding(10)
                                             }
                                         }
@@ -98,9 +102,14 @@ struct ProjectDetailView: View {
                                                     .overlay(
                                                         Group {
                                                             if !isReadOnly {
-                                                                Image(systemName: "pencil.circle.fill")
-                                                                    .font(.title2)
-                                                                    .foregroundColor(.blue)
+                                                                Image(systemName: "pencil")
+                                                                    .fontWeight(.medium)
+                                                                    .padding(8)
+                                                                    .background(.regularMaterial)
+                                                                    .clipShape(Circle())
+                                                                    .foregroundColor(.primary)
+                                                                    .shadow(radius: 3)
+                                                                    .padding(10)
                                                                     .offset(x: 25, y: 25)
                                                             }
                                                         }
@@ -400,5 +409,28 @@ struct ProjectDetailView: View {
     
     func deleteSpecificMilestone(_ item: Milestone) {
         if let index = project.milestones.firstIndex(where: { $0.id == item.id }) { withAnimation { project.milestones.remove(at: index) } }
+    }
+}
+#Preview {
+    NavigationStack {
+        ProjectDetailView(
+            project: .constant(Project(
+                title: "Exemplu Proiect",
+                imageName: "star.fill",
+                type: .personal,
+                startDate: Date(),
+                dueDate: Date().addingTimeInterval(86400 * 30), // +30 zile
+                milestones: [
+                    Milestone(title: "Pasul 1 - Finalizat", isCompleted: true),
+                    Milestone(title: "Pasul 2 - Urgent", isCompleted: false, deadline: Date().addingTimeInterval(3600))
+                ],
+                reflections: [
+                    Reflection(date: Date(), text: "Prima notiță despre acest proiect.")
+                ]
+            )),
+            onSave: {
+                print("Salvare simulată")
+            }
+        )
     }
 }
