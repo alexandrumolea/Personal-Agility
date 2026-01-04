@@ -134,6 +134,16 @@ struct Objective: Identifiable, Codable, Equatable {
     }
     
     static func == (lhs: Objective, rhs: Objective) -> Bool {
-        return lhs.id == rhs.id && lhs.title == rhs.title && lhs.milestones == rhs.milestones && lhs.type == rhs.type && lhs.isFinished == rhs.isFinished && lhs.reflections == rhs.reflections
+        return lhs.id == rhs.id &&
+               lhs.title == rhs.title &&
+               lhs.successCriteria == rhs.successCriteria &&
+               lhs.imageName == rhs.imageName &&
+               lhs.imageData == rhs.imageData &&
+               lhs.type == rhs.type &&
+               lhs.isFinished == rhs.isFinished &&
+               lhs.startDate == rhs.startDate &&
+               lhs.dueDate == rhs.dueDate &&
+               lhs.milestones == rhs.milestones &&
+               lhs.reflections == rhs.reflections
     }
 }
