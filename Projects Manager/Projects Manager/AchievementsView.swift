@@ -30,6 +30,14 @@ struct AchievementsView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    returnProject(project)
+                                } label: {
+                                    Label("Return", systemImage: "arrow.uturn.backward")
+                                }
+                                .tint(.blue)
+                            }
                         }
                     }
                     .onDelete { indexSet in
@@ -62,6 +70,14 @@ struct AchievementsView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    returnObjective(obj)
+                                } label: {
+                                    Label("Return", systemImage: "arrow.uturn.backward")
+                                }
+                                .tint(.blue)
+                            }
                         }
                     }
                     .onDelete { indexSet in
@@ -103,6 +119,20 @@ struct AchievementsView: View {
             }
         }
         DataManager.shared.saveObjectives(objectives)
+    }
+    
+    func returnProject(_ project: Project) {
+        if let index = projects.firstIndex(where: { $0.id == project.id }) {
+            projects[index].isFinished = false
+            DataManager.shared.saveProjects(projects)
+        }
+    }
+    
+    func returnObjective(_ objective: Objective) {
+        if let index = objectives.firstIndex(where: { $0.id == objective.id }) {
+            objectives[index].isFinished = false
+            DataManager.shared.saveObjectives(objectives)
+        }
     }
 }
 
