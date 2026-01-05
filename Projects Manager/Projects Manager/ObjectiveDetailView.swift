@@ -50,30 +50,57 @@ struct ObjectiveDetailView: View {
                             
                             // --- TAG OBIECTIV (MENU) ---
                             HStack {
-                                Menu {
-                                    ForEach(ObjectiveType.allCases, id: \.self) { type in
-                                        Button(type.rawValue) { withAnimation { objective.type = type } }
+                                    Menu {
+                                        ForEach(ObjectiveType.allCases, id: \.self) { type in
+                                            Button {
+                                                withAnimation(.snappy) {
+                                                    objective.type = type
+                                                }
+                                            } label: {
+                                                Text(type.rawValue)
+                                            }
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text(objective.type.rawValue.uppercased())
+                                                // AICI ESTE FIX-UL:
+                                                .id(objective.type) // 1. Forțează redesenarea imediată
+                                                .contentTransition(.numericText(value: 0.25)) // 2. Animație fluidă
+                                            
+                                            if !isReadOnly {
+                                                Image(systemName: "chevron.down")
+                                                    .font(.caption2)
+                                                    .opacity(0.6)
+                                            }
+                                        }
+                                        .font(.caption).bold()
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(.ultraThinMaterial)
+                                        .clipShape(Capsule())
+                                        .foregroundColor(.primary)
+                                        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
                                     }
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Text(objective.type.rawValue.uppercased())
-                                        if !isReadOnly { Image(systemName: "chevron.down").font(.caption2).opacity(0.6) }
+                                    .disabled(isReadOnly)
+                                    // Adăugăm animația și pe container pentru siguranță
+                                    .animation(.snappy, value: objective.type)
+                                    
+                                    if objective.isFinished {
+                                        Text("COMPLETED")
+                                            .font(.caption).bold()
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(.ultraThinMaterial)
+                                            .clipShape(Capsule())
+                                            .foregroundColor(.primary)
+                                            .overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 1))
                                     }
-                                    .font(.caption).bold().padding(.horizontal, 10).padding(.vertical, 6)
-                                    .background(.ultraThinMaterial).clipShape(Capsule()).foregroundColor(.primary)
-                                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
                                 }
-                                .disabled(isReadOnly)
-                                
-                                if objective.isFinished {
-                                    Text("COMPLETED").font(.caption).bold().padding(.horizontal, 10).padding(.vertical, 6).background(.ultraThinMaterial).clipShape(Capsule()).foregroundColor(.primary).overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 1))
-                                }
-                            }
                             
                             // Success Definition
                             VStack(alignment: .leading, spacing: 5) {
                                 HStack {
-                                    Text("Why this matters?").font(.headline).fontDesign(.rounded)
+                                    Text("How do you define success?").font(.headline).fontDesign(.rounded)
                                     Spacer()
                                     if isEditingSuccess && !isReadOnly { Button("Done") { isEditingSuccess = false; isSuccessFocused = false }.font(.subheadline).bold().foregroundColor(.primary) }
                                 }
@@ -186,14 +213,18 @@ struct ObjectiveDetailView: View {
                         }
                     }
                     if objective.reflections.isEmpty && !isAddingReflection { Text("No notes yet.").font(.caption).foregroundColor(.gray).italic() } else {
-                        ForEach(objective.reflections) { reflection in
+                        ForEach($objective.reflections) { $reflection in
                             HStack(alignment: .top, spacing: 15) {
                                 VStack(alignment: .center, spacing: 0) {
                                     Text(reflection.date.formatted(.dateTime.day().month())).font(.caption2).bold().foregroundColor(.gray)
                                     Rectangle().fill(Color.gray.opacity(0.3)).frame(width: 2).frame(maxHeight: .infinity).padding(.top, 4)
                                 }.frame(width: 40)
                                 VStack(alignment: .leading, spacing: 5) {
-                                    Text(reflection.text).font(.subheadline).foregroundColor(.primary)
+                                    if isReadOnly {
+                                        Text(reflection.text).font(.subheadline).foregroundColor(.primary)
+                                    } else {
+                                        TextField("Note", text: $reflection.text, axis: .vertical).font(.subheadline).foregroundColor(.primary)
+                                    }
                                     Text(reflection.date.formatted(date: .omitted, time: .shortened)).font(.caption2).foregroundColor(.gray.opacity(0.8))
                                 }.padding(.bottom, 15)
                             }.listRowSeparator(.hidden)

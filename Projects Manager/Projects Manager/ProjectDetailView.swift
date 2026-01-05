@@ -340,14 +340,18 @@ struct ProjectDetailView: View {
                         }
                     }
                     if project.reflections.isEmpty && !isAddingReflection { Text("No reflections yet.").font(.caption).foregroundColor(.gray).italic() } else {
-                        ForEach(project.reflections) { reflection in
+                        ForEach($project.reflections) { $reflection in
                             HStack(alignment: .top, spacing: 15) {
                                 VStack(alignment: .center, spacing: 0) {
                                     Text(reflection.date.formatted(.dateTime.day().month())).font(.caption2).bold().foregroundColor(.gray)
                                     Rectangle().fill(Color.gray.opacity(0.3)).frame(width: 2).frame(maxHeight: .infinity).padding(.top, 4)
                                 }.frame(width: 40)
                                 VStack(alignment: .leading, spacing: 5) {
-                                    Text(reflection.text).font(.subheadline).foregroundColor(.primary)
+                                    if isReadOnly {
+                                        Text(reflection.text).font(.subheadline).foregroundColor(.primary)
+                                    } else {
+                                        TextField("Note", text: $reflection.text, axis: .vertical).font(.subheadline).foregroundColor(.primary)
+                                    }
                                     Text(reflection.date.formatted(date: .omitted, time: .shortened)).font(.caption2).foregroundColor(.gray.opacity(0.8))
                                 }.padding(.bottom, 15)
                             }.listRowSeparator(.hidden)
