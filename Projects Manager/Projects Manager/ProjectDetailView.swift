@@ -60,196 +60,165 @@ struct ProjectDetailView: View {
         ZStack(alignment: .bottom) {
             
             List {
-                // --- SECTION 1: HEADER & ICON ---
+                // ============================================
+                // RÂNDUL 1: FOTO DE COPERTĂ (Izolat complet)
+                // ============================================
                 Section {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // FOTO DE COPERTĂ
-                        ZStack(alignment: .bottomTrailing) {
-                            if let data = project.imageData, let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable().scaledToFill().frame(height: 250)
-                                    .clipShape(RoundedRectangle(cornerRadius: 15))
-                                    .overlay(alignment: .topTrailing) {
-                                        // Buton de ștergere poză (ca să revii la iconiță)
-                                        if !isReadOnly {
-                                            Button {
-                                                withAnimation { project.imageData = nil }
-                                            } label: {
-                                                Image(systemName: "trash")
-                                                    .fontWeight(.medium)
-                                                    .padding(8)
-                                                    .background(.regularMaterial)
-                                                    .clipShape(Circle())
-                                                    .foregroundColor(.primary)
-                                                    .shadow(radius: 3)
-                                                    .padding(10)
-                                            }
+                    ZStack(alignment: .bottomTrailing) {
+                        if let data = project.imageData, let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable().scaledToFill().frame(height: 250)
+                                .clipShape(RoundedRectangle(cornerRadius: 15))
+                                .overlay(alignment: .topTrailing) {
+                                    if !isReadOnly {
+                                        Button {
+                                            withAnimation { project.imageData = nil }
+                                        } label: {
+                                            Image(systemName: "trash")
+                                                .fontWeight(.medium).padding(8)
+                                                .background(.regularMaterial).clipShape(Circle())
+                                                .foregroundColor(.primary).shadow(radius: 3).padding(10)
                                         }
+                                        .buttonStyle(.plain) // Important pentru butonul de trash
                                     }
-                            } else {
-                                Rectangle().fill(.ultraThinMaterial).frame(height: 200)
-                                    .overlay(
-                                        VStack {
-                                            // ICONIȚA MARE (TAPPABLE PENTRU EDITARE)
-                                            Button {
-                                                if !isReadOnly { showIconPicker = true }
-                                            } label: {
-                                                Image(systemName: project.imageName)
-                                                    .font(.system(size: 60))
-                                                    .foregroundColor(.gray)
-                                                    .padding()
-                                                    .background(Circle().fill(.regularMaterial))
-                                                    .overlay(
-                                                        Group {
-                                                            if !isReadOnly {
-                                                                Image(systemName: "pencil")
-                                                                    .fontWeight(.medium)
-                                                                    .padding(8)
-                                                                    .background(.regularMaterial)
-                                                                    .clipShape(Circle())
-                                                                    .foregroundColor(.primary)
-                                                                    .shadow(radius: 3)
-                                                                    .padding(10)
-                                                                    .offset(x: 25, y: 25)
-                                                            }
-                                                        }
-                                                    )
-                                            }
-                                            .buttonStyle(.plain)
-                                            
-                                            Text(isReadOnly ? "" : "Tap icon to change")
-                                                .font(.caption2).foregroundColor(.gray).padding(.top, 5)
-                                        }
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 15))
-                            }
-                            
-                            if !isReadOnly {
-                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                                    Image(systemName: "camera")
-                                        .fontWeight(.medium)
-                                        .padding(8)
-                                        .background(.regularMaterial)
-                                        .clipShape(Circle())
-                                        .foregroundColor(.primary)
-                                        .shadow(radius: 3)
-                                        .padding(10)
                                 }
+                        } else {
+                            Rectangle().fill(.ultraThinMaterial).frame(height: 200)
+                                .overlay(
+                                    VStack {
+                                        Button {
+                                            if !isReadOnly { showIconPicker = true }
+                                        } label: {
+                                            Image(systemName: project.imageName)
+                                                .font(.system(size: 60)).foregroundColor(.gray).padding()
+                                                .background(Circle().fill(.regularMaterial))
+                                                .overlay(
+                                                    Group {
+                                                        if !isReadOnly {
+                                                            Image(systemName: "pencil")
+                                                                .fontWeight(.medium).padding(8)
+                                                                .background(.regularMaterial).clipShape(Circle())
+                                                                .foregroundColor(.primary).shadow(radius: 3)
+                                                                .padding(10).offset(x: 25, y: 25)
+                                                        }
+                                                    }
+                                                )
+                                        }
+                                        .buttonStyle(.plain) // Izolăm butonul iconiței
+                                        
+                                        Text(isReadOnly ? "" : "Tap icon to change")
+                                            .font(.caption2).foregroundColor(.gray).padding(.top, 5)
+                                    }
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 15))
+                        }
+                        
+                        // Photos Picker-ul este acum strict legat DOAR de acest rând vizual
+                        if !isReadOnly {
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                Image(systemName: "camera")
+                                    .fontWeight(.medium).padding(8)
+                                    .background(.regularMaterial).clipShape(Circle())
+                                    .foregroundColor(.primary).shadow(radius: 3).padding(10)
+                            }
+                            .buttonStyle(.plain) // Izolăm butonul camerei
+                        }
+                    }
+                    .padding(.horizontal).padding(.top)
+                    .listRowInsets(EdgeInsets()) // Eliminăm padding-ul default al listei
+                    .listRowSeparator(.hidden)
+                }
+                
+                // ============================================
+                // RÂNDUL 2: DETALII, TIMELINE, TITLU (Separat fizic)
+                // ============================================
+                Section {
+                    VStack(alignment: .leading, spacing: 15) {
+                        // ... AICI MUTĂM TOT BLOCUL DE "INFO TITLU & TIP" și "TIMELINE" ...
+                        
+                        // 1. HEADER TITLU
+                        HStack(spacing: 12) {
+                            Image(systemName: project.imageName)
+                                .font(.title).foregroundColor(.primary).frame(width: 40)
+                                .onTapGesture { if !isReadOnly { showIconPicker = true } }
+                            
+                            if isReadOnly {
+                                Text(project.title).font(.title2).bold()
+                            } else {
+                                TextField("Project Title", text: $project.title).font(.title2).bold()
                             }
                         }
-                        .padding(.horizontal).padding(.top)
-                        .onChange(of: selectedPhotoItem) { oldValue, newItem in
-                            Task {
-                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                    project.imageData = data
+                        Divider()
+                        
+                        // 2. MENIU TIP
+                        HStack {
+                            Menu {
+                                Button("Personal") { withAnimation { project.type = .personal } }
+                                Button("Work") { withAnimation { project.type = .work } }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(project.type.rawValue.uppercased())
+                                    if !isReadOnly { Image(systemName: "chevron.down").font(.caption2).opacity(0.6) }
+                                }
+                                .font(.caption).bold().padding(.horizontal, 10).padding(.vertical, 6)
+                                .background(.ultraThinMaterial).clipShape(Capsule()).foregroundColor(.primary)
+                            }
+                            .disabled(isReadOnly)
+                            
+                            if project.isFinished {
+                                Text("COMPLETED").font(.caption).bold()
+                                    .padding(.horizontal, 10).padding(.vertical, 6)
+                                    .background(.ultraThinMaterial).clipShape(Capsule()).foregroundColor(.primary)
+                                    .overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 1))
+                            }
+                        }
+                        
+                        // 3. SUCCESS DEFINITION
+                        VStack(alignment: .leading, spacing: 5) {
+                            HStack {
+                                Text("Success Definition").font(.headline).fontDesign(.rounded)
+                                Spacer()
+                                if isEditingSuccess && !isReadOnly { Button("Done") { isEditingSuccess = false; isSuccessFocused = false }.font(.subheadline).bold() }
+                            }
+                            ZStack(alignment: .topLeading) {
+                                if isEditingSuccess && !isReadOnly {
+                                    TextEditor(text: $project.successCriteria).focused($isSuccessFocused).frame(minHeight: 60).padding(4).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 1))
+                                } else {
+                                    Text(project.successCriteria.isEmpty ? "No definition provided." : project.successCriteria)
+                                        .font(.subheadline).foregroundColor(project.successCriteria.isEmpty ? .gray : .primary)
+                                        .frame(maxWidth: .infinity, alignment: .leading).padding(10)
+                                        .background(.ultraThinMaterial).cornerRadius(12)
+                                        .onTapGesture { if !isReadOnly { isEditingSuccess = true; isSuccessFocused = true } }
                                 }
                             }
                         }
                         
-                        // INFO TITLU & TIP
-                        VStack(alignment: .leading, spacing: 15) {
-                            HStack(spacing: 12) {
-                                // Iconița mică lângă titlu (se actualizează automat)
-                                Image(systemName: project.imageName)
-                                    .font(.title)
-                                    .foregroundColor(.primary)
-                                    .frame(width: 40)
-                                    .onTapGesture {
-                                        if !isReadOnly { showIconPicker = true }
-                                    }
-                                
-                                if isReadOnly {
-                                    Text(project.title).font(.title2).bold()
-                                } else {
-                                    TextField("Project Title", text: $project.title).font(.title2).bold()
-                                }
-                            }
-                            Divider()
-                            
-                            // MENIU TIP PROIECT
+                        // 4. TIMELINE (Aici era problema înainte)
+                        VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Menu {
-                                    Button("Personal") { withAnimation { project.type = .personal } }
-                                    Button("Work") { withAnimation { project.type = .work } }
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Text(project.type.rawValue.uppercased())
-                                        if !isReadOnly {
-                                            Image(systemName: "chevron.down").font(.caption2).opacity(0.6)
-                                        }
-                                    }
-                                    .font(.caption).bold()
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(Capsule())
-                                    .foregroundColor(.primary)
-                                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-                                }
-                                .disabled(isReadOnly)
-                                
-                                if project.isFinished {
-                                    Text("COMPLETED")
-                                        .font(.caption).bold()
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .background(.ultraThinMaterial)
-                                        .clipShape(Capsule())
-                                        .foregroundColor(.primary)
-                                        .overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 1))
-                                }
+                                Text("Timeline").font(.headline).fontDesign(.rounded)
+                                Spacer()
+                                Text(project.isFinished ? "100%" : "\(Int(project.timeProgress() * 100))%").font(.caption).bold()
                             }
+                            TimeProgressBar(progress: project.isFinished ? 1.0 : project.timeProgress(), color: .primary)
                             
-                            // Success Definition
-                            VStack(alignment: .leading, spacing: 5) {
-                                HStack {
-                                    Text("Success Definition").font(.headline).fontDesign(.rounded)
+                            HStack {
+                                if isReadOnly {
+                                    Text(project.startDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
                                     Spacer()
-                                    if isEditingSuccess && !isReadOnly { Button("Done") { isEditingSuccess = false; isSuccessFocused = false }.font(.subheadline).bold().foregroundColor(.primary) }
-                                }
-                                ZStack(alignment: .topLeading) {
-                                    if isEditingSuccess && !isReadOnly {
-                                        TextEditor(text: $project.successCriteria).focused($isSuccessFocused).frame(minHeight: 60).padding(4).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 1))
-                                    } else {
-                                        Text(project.successCriteria.isEmpty ? "No definition provided." : project.successCriteria)
-                                            .font(.subheadline).foregroundColor(project.successCriteria.isEmpty ? .gray : .primary).frame(maxWidth: .infinity, alignment: .leading).padding(10)
-                                            .background(.ultraThinMaterial)
-                                            .cornerRadius(12)
-                                            .onTapGesture {
-                                                if !isReadOnly { isEditingSuccess = true; isSuccessFocused = true }
-                                            }
-                                    }
-                                }
-                            }
-                            
-                            // Timeline Progress
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Timeline").font(.headline).fontDesign(.rounded)
+                                    Text(project.dueDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
+                                } else {
+                                    DatePicker("", selection: $project.startDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
                                     Spacer()
-                                    Text(project.isFinished ? "100%" : "\(Int(project.timeProgress() * 100))%").font(.caption).bold().foregroundColor(.primary)
-                                }
-                                TimeProgressBar(progress: project.isFinished ? 1.0 : project.timeProgress(), color: .primary)
-                                
-                                HStack {
-                                    if isReadOnly {
-                                        Text(project.startDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
-                                        Spacer()
-                                        Text(project.dueDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
-                                    } else {
-                                        DatePicker("", selection: $project.startDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
-                                        Spacer()
-                                        DatePicker("", selection: $project.dueDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
-                                    }
+                                    DatePicker("", selection: $project.dueDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
                                 }
                             }
                         }
-                        .padding()
                     }
+                    .padding()
+                    .listRowInsets(EdgeInsets()) // Eliminăm padding-ul standard pentru a lipi vizual de imagine (dacă dorești)
+                    .listRowSeparator(.hidden)
                 }
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
-                .listSectionSeparator(.hidden)
                 
                 // --- SECTION 2: ADD MILESTONE ---
                 if !isReadOnly {

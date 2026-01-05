@@ -17,133 +17,135 @@ struct ObjectiveDetailView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             List {
-                // --- SECTION 1: HEADER ---
+                // --- SECTION 1: FOTO (IZOLATĂ) ---
+                // Separăm poza de restul conținutului pentru a izola PhotosPicker-ul
                 Section {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // FOTO
-                        ZStack(alignment: .bottomTrailing) {
-                            if let data = objective.imageData, let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage).resizable().scaledToFill().frame(height: 250).clipShape(RoundedRectangle(cornerRadius: 15))
-                            } else {
-                                Rectangle().fill(.ultraThinMaterial).frame(height: 200)
-                                    .overlay(VStack{Image(systemName: "target").font(.largeTitle).foregroundColor(.gray);Text("No photo").font(.caption).foregroundColor(.gray)})
-                                    .clipShape(RoundedRectangle(cornerRadius: 15))
-                            }
-                            if !isReadOnly {
-                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                                    Image(systemName: "camera").fontWeight(.medium).padding(8).background(.regularMaterial).clipShape(Circle()).foregroundColor(.primary).shadow(radius: 3).padding(10)
-                                }
-                            }
-                        }
-                        .padding(.horizontal).padding(.top)
-                        .onChange(of: selectedPhotoItem) { oldValue, newItem in
-                            Task { if let data = try? await newItem?.loadTransferable(type: Data.self) { objective.imageData = data } }
+                    ZStack(alignment: .bottomTrailing) {
+                        if let data = objective.imageData, let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable().scaledToFill().frame(height: 250)
+                                .clipShape(RoundedRectangle(cornerRadius: 15))
+                        } else {
+                            Rectangle().fill(.ultraThinMaterial).frame(height: 200)
+                                .overlay(VStack{
+                                    Image(systemName: "target").font(.largeTitle).foregroundColor(.gray)
+                                    Text("No photo").font(.caption).foregroundColor(.gray)
+                                })
+                                .clipShape(RoundedRectangle(cornerRadius: 15))
                         }
                         
-                        // INFO
-                        VStack(alignment: .leading, spacing: 15) {
-                            HStack(spacing: 12) {
-                                Image(systemName: objective.imageName).font(.title).foregroundColor(.primary).frame(width: 40)
-                                if isReadOnly { Text(objective.title).font(.title2).bold() } else { TextField("Objective Title", text: $objective.title).font(.title2).bold() }
+                        if !isReadOnly {
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                Image(systemName: "camera")
+                                    .fontWeight(.medium).padding(8)
+                                    .background(.regularMaterial).clipShape(Circle())
+                                    .foregroundColor(.primary).shadow(radius: 3).padding(10)
                             }
-                            Divider()
-                            
-                            // --- TAG OBIECTIV (MENU) ---
-                            HStack {
-                                    Menu {
-                                        ForEach(ObjectiveType.allCases, id: \.self) { type in
-                                            Button {
-                                                withAnimation(.snappy) {
-                                                    objective.type = type
-                                                }
-                                            } label: {
-                                                Text(type.rawValue)
-                                            }
-                                        }
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Text(objective.type.rawValue.uppercased())
-                                                // AICI ESTE FIX-UL:
-                                                .id(objective.type) // 1. Forțează redesenarea imediată
-                                                .contentTransition(.numericText(value: 0.25)) // 2. Animație fluidă
-                                            
-                                            if !isReadOnly {
-                                                Image(systemName: "chevron.down")
-                                                    .font(.caption2)
-                                                    .opacity(0.6)
-                                            }
-                                        }
-                                        .font(.caption).bold()
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .background(.ultraThinMaterial)
-                                        .clipShape(Capsule())
-                                        .foregroundColor(.primary)
-                                        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-                                    }
-                                    .disabled(isReadOnly)
-                                    // Adăugăm animația și pe container pentru siguranță
-                                    .animation(.snappy, value: objective.type)
+                            .buttonStyle(.plain) // Stil explicit pentru a nu captura tot rândul
+                        }
+                    }
+                    .padding(.horizontal).padding(.top)
+                    .onChange(of: selectedPhotoItem) { oldValue, newItem in
+                        Task { if let data = try? await newItem?.loadTransferable(type: Data.self) { objective.imageData = data } }
+                    }
+                }
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                
+                // --- SECTION 2: INFO & TIMELINE (SEPARATĂ FIZIC) ---
+                // Aici utilizatorul poate atinge oriunde fără să declanșeze camera
+                Section {
+                    VStack(alignment: .leading, spacing: 15) {
+                        // Titlu și Icon
+                        HStack(spacing: 12) {
+                            Image(systemName: objective.imageName).font(.title).foregroundColor(.primary).frame(width: 40)
+                            if isReadOnly { Text(objective.title).font(.title2).bold() } else { TextField("Objective Title", text: $objective.title).font(.title2).bold() }
+                        }
+                        Divider()
+                        
+                        // --- TAG OBIECTIV (MENU) ---
+                        HStack {
+                            Menu {
+                                ForEach(ObjectiveType.allCases, id: \.self) { type in
+                                    Button {
+                                        withAnimation(.snappy) { objective.type = type }
+                                    } label: { Text(type.rawValue) }
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(objective.type.rawValue.uppercased())
+                                        .id(objective.type)
+                                        .contentTransition(.numericText(value: 0.25))
                                     
-                                    if objective.isFinished {
-                                        Text("COMPLETED")
-                                            .font(.caption).bold()
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
-                                            .background(.ultraThinMaterial)
-                                            .clipShape(Capsule())
-                                            .foregroundColor(.primary)
-                                            .overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 1))
+                                    if !isReadOnly {
+                                        Image(systemName: "chevron.down").font(.caption2).opacity(0.6)
                                     }
                                 }
-                            
-                            // Success Definition
-                            VStack(alignment: .leading, spacing: 5) {
-                                HStack {
-                                    Text("How do you define success?").font(.headline).fontDesign(.rounded)
-                                    Spacer()
-                                    if isEditingSuccess && !isReadOnly { Button("Done") { isEditingSuccess = false; isSuccessFocused = false }.font(.subheadline).bold().foregroundColor(.primary) }
-                                }
-                                ZStack(alignment: .topLeading) {
-                                    if isEditingSuccess && !isReadOnly {
-                                        TextEditor(text: $objective.successCriteria).focused($isSuccessFocused).frame(minHeight: 60).padding(4).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 1))
-                                    } else {
-                                        Text(objective.successCriteria.isEmpty ? "Define your 'Why'..." : objective.successCriteria)
-                                            .font(.subheadline).foregroundColor(objective.successCriteria.isEmpty ? .gray : .primary).frame(maxWidth: .infinity, alignment: .leading).padding(10).background(.ultraThinMaterial).cornerRadius(12)
-                                            .onTapGesture { if !isReadOnly { isEditingSuccess = true; isSuccessFocused = true } }
-                                    }
-                                }
+                                .font(.caption).bold()
+                                .padding(.horizontal, 10).padding(.vertical, 6)
+                                .background(.ultraThinMaterial).clipShape(Capsule())
+                                .foregroundColor(.primary)
+                                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
                             }
+                            .disabled(isReadOnly)
+                            .animation(.snappy, value: objective.type)
                             
-                            // Timeline
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Timeline").font(.headline).fontDesign(.rounded)
-                                    Spacer()
-                                    Text(objective.isFinished ? "100%" : "\(Int(objective.timeProgress() * 100))%").font(.caption).bold().foregroundColor(.primary)
-                                }
-                                TimeProgressBar(progress: objective.isFinished ? 1.0 : objective.timeProgress(), color: .primary)
-                                HStack {
-                                    if isReadOnly {
-                                        Text(objective.startDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
-                                        Spacer()
-                                        Text(objective.dueDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
-                                    } else {
-                                        DatePicker("", selection: $objective.startDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
-                                        Spacer()
-                                        DatePicker("", selection: $objective.dueDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
-                                    }
+                            if objective.isFinished {
+                                Text("COMPLETED")
+                                    .font(.caption).bold()
+                                    .padding(.horizontal, 10).padding(.vertical, 6)
+                                    .background(.ultraThinMaterial).clipShape(Capsule())
+                                    .foregroundColor(.primary)
+                                    .overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 1))
+                            }
+                        }
+                        
+                        // Success Definition
+                        VStack(alignment: .leading, spacing: 5) {
+                            HStack {
+                                Text("How do you define success?").font(.headline).fontDesign(.rounded)
+                                Spacer()
+                                if isEditingSuccess && !isReadOnly { Button("Done") { isEditingSuccess = false; isSuccessFocused = false }.font(.subheadline).bold().foregroundColor(.primary) }
+                            }
+                            ZStack(alignment: .topLeading) {
+                                if isEditingSuccess && !isReadOnly {
+                                    TextEditor(text: $objective.successCriteria).focused($isSuccessFocused).frame(minHeight: 60).padding(4).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 1))
+                                } else {
+                                    Text(objective.successCriteria.isEmpty ? "Define your 'Why'..." : objective.successCriteria)
+                                        .font(.subheadline).foregroundColor(objective.successCriteria.isEmpty ? .gray : .primary).frame(maxWidth: .infinity, alignment: .leading).padding(10).background(.ultraThinMaterial).cornerRadius(12)
+                                        .onTapGesture { if !isReadOnly { isEditingSuccess = true; isSuccessFocused = true } }
                                 }
                             }
                         }
-                        .padding()
+                        
+                        // Timeline
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Timeline").font(.headline).fontDesign(.rounded)
+                                Spacer()
+                                Text(objective.isFinished ? "100%" : "\(Int(objective.timeProgress() * 100))%").font(.caption).bold().foregroundColor(.primary)
+                            }
+                            TimeProgressBar(progress: objective.isFinished ? 1.0 : objective.timeProgress(), color: .primary)
+                            HStack {
+                                if isReadOnly {
+                                    Text(objective.startDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
+                                    Spacer()
+                                    Text(objective.dueDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
+                                } else {
+                                    DatePicker("", selection: $objective.startDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
+                                    Spacer()
+                                    DatePicker("", selection: $objective.dueDate, displayedComponents: .date).labelsHidden().scaleEffect(0.8).tint(.primary)
+                                }
+                            }
+                        }
                     }
+                    .padding() // Padding necesar pentru că am scos insets-urile rândului
                 }
                 .listRowInsets(EdgeInsets())
                 .listRowSeparator(.hidden)
                 .listSectionSeparator(.hidden)
                 
-                // --- SECTION 2: ADD MILESTONE ---
+                // --- SECTION 3: ADD MILESTONE ---
                 if !isReadOnly {
                     Section {
                         HStack {
@@ -157,7 +159,7 @@ struct ObjectiveDetailView: View {
                     }
                 }
                 
-                // --- SECTION 3: MILESTONES (TO DO) ---
+                // --- SECTION 4: MILESTONES (TO DO) ---
                 let pendingTasks = objective.milestones.filter { !$0.isCompleted }
                 if !pendingTasks.isEmpty {
                     Section(header: Text("Key Results / Milestones")) {
@@ -175,7 +177,7 @@ struct ObjectiveDetailView: View {
                     }
                 }
                 
-                // --- SECTION 4: ACHIEVEMENTS ---
+                // --- SECTION 5: ACHIEVEMENTS ---
                 let completedTasks = objective.milestones.filter { $0.isCompleted }
                 if !completedTasks.isEmpty {
                     Section(header: HStack { Text("Wins"); Image(systemName: "trophy").foregroundColor(.primary) }) {
@@ -195,7 +197,7 @@ struct ObjectiveDetailView: View {
                     }
                 }
                 
-                // --- SECTION 5: REFLECTIONS ---
+                // --- SECTION 6: REFLECTIONS ---
                 Section(header: HStack {
                     Text("Journal & Progress")
                     Spacer()
