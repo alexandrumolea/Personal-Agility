@@ -58,8 +58,8 @@ struct ObjectiveDetailView: View {
                     VStack(alignment: .leading, spacing: 15) {
                         // Titlu și Icon
                         HStack(spacing: 12) {
-                            Image(systemName: objective.imageName).font(.title).foregroundColor(.primary).frame(width: 40)
-                            if isReadOnly { Text(objective.title).font(.title2).bold() } else { TextField("Objective Title", text: $objective.title).font(.title2).bold() }
+                            Image(systemName: objective.imageName).font(.title).foregroundColor(.primary).frame(width: 40) .padding(.top, 4)
+                            if isReadOnly { Text(objective.title).font(.title2).bold() } else { TextField("Objective Title", text: $objective.title, axis: .vertical).font(.title2).bold() }
                         }
                         Divider()
                         
@@ -256,3 +256,4 @@ struct ObjectiveDetailView: View {
         if let index = objective.milestones.firstIndex(where: { $0.id == item.id }) { withAnimation { objective.milestones.remove(at: index) } }
     }
 }
+
