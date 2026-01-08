@@ -113,6 +113,7 @@ struct ObjectiveDetailView: View {
                                 } else {
                                     Text(objective.successCriteria.isEmpty ? "Define your 'Why'..." : objective.successCriteria)
                                         .font(.subheadline).foregroundColor(objective.successCriteria.isEmpty ? .gray : .primary).frame(maxWidth: .infinity, alignment: .leading).padding(10).background(.ultraThinMaterial).cornerRadius(12)
+                                        .fixedSize(horizontal: false, vertical: true)
                                         .onTapGesture { if !isReadOnly { isEditingSuccess = true; isSuccessFocused = true } }
                                 }
                             }

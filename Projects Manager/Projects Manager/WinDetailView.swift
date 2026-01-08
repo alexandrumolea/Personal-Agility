@@ -4,6 +4,8 @@ struct WinDetailView: View {
     @Binding var win: Win
     var onSave: () -> Void
     
+    
+    
     var body: some View {
         Form {
             Section(header: Text("Basic Info")) {
