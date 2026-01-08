@@ -147,3 +147,23 @@ struct Objective: Identifiable, Codable, Equatable {
                lhs.reflections == rhs.reflections
     }
 }
+
+// WIN
+struct Win: Identifiable, Codable, Equatable {
+    var id = UUID()
+    var title: String
+    var date: Date
+    var imageName: String = "trophy.fill"
+    var imageData: Data? = nil
+    var type: ObjectiveType = .personalGrowth
+    
+    // Questionnaire
+    var whatDidYouDo: String = ""
+    var uncontrollableFactors: String = ""
+    var learnAccomplishing: String = ""
+    var learnAboutSelf: String = ""
+    var useLessonsElsewhere: String = ""
+    var helpBiggerObjectives: String = ""
+    var celebration: String = ""
+    var notes: String = ""
+}

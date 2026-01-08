@@ -42,4 +42,16 @@ class DataManager {
         guard let data = try? Data(contentsOf: getObjectivesURL()) else { return [] }
         return (try? JSONDecoder().decode([Objective].self, from: data)) ?? []
     }
+    
+    // --- WINS ---
+    private func getWinsURL() -> URL { getDocumentsDirectory().appendingPathComponent("SavedWins.json") }
+    
+    func saveWins(_ wins: [Win]) {
+        do { try JSONEncoder().encode(wins).write(to: getWinsURL()) } catch { print("Err wins: \(error)") }
+    }
+    
+    func loadWins() -> [Win] {
+        guard let data = try? Data(contentsOf: getWinsURL()) else { return [] }
+        return (try? JSONDecoder().decode([Win].self, from: data)) ?? []
+    }
 }

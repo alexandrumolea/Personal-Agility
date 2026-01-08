@@ -4,6 +4,7 @@ struct ContentView: View {
     @State private var projects: [Project] = []
     @State private var clients: [Client] = []
     @State private var objectives: [Objective] = []
+    @State private var wins: [Win] = []
     
     @Environment(\.scenePhase) var scenePhase
     
@@ -24,7 +25,7 @@ struct ContentView: View {
             // TAB 4
             NavigationStack {
                 // MODIFICARE: Pasăm $objectives (Binding) ca să putem șterge
-                AchievementsView(projects: $projects, objectives: $objectives)
+                AchievementsView(projects: $projects, objectives: $objectives, wins: $wins)
             }
             .tabItem { Label("Hall of Fame", systemImage: "trophy.fill") }
         }
@@ -32,15 +33,18 @@ struct ContentView: View {
             projects = DataManager.shared.loadProjects()
             clients = DataManager.shared.loadClients()
             objectives = DataManager.shared.loadObjectives()
+            wins = DataManager.shared.loadWins()
         }
         .onChange(of: projects) { _, newValue in DataManager.shared.saveProjects(newValue) }
         .onChange(of: clients) { _, newValue in DataManager.shared.saveClients(newValue) }
         .onChange(of: objectives) { _, newValue in DataManager.shared.saveObjectives(newValue) }
+        .onChange(of: wins) { _, newValue in DataManager.shared.saveWins(newValue) }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .inactive || newPhase == .background {
                 DataManager.shared.saveProjects(projects)
                 DataManager.shared.saveClients(clients)
                 DataManager.shared.saveObjectives(objectives)
+                DataManager.shared.saveWins(wins)
             }
         }
     }
