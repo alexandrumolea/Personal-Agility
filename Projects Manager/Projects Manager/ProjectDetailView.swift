@@ -1,9 +1,9 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 
 struct ProjectDetailView: View {
-    @Binding var project: Project
-    var onSave: () -> Void
+    @Bindable var project: Project
     var isReadOnly: Bool = false
     
     @Environment(\.dismiss) var dismiss
@@ -198,9 +198,10 @@ struct ProjectDetailView: View {
                             HStack {
                                 Text("Timeline").font(.headline).fontDesign(.rounded)
                                 Spacer()
-                                Text(project.isFinished ? "100%" : "\(Int(project.timeProgress() * 100))%").font(.caption).bold()
+                                Text(project.isFinished ? "100%" : "\(Int(project.timeProgress * 100))%").font(.caption).bold().foregroundColor(.primary)
                             }
-                            TimeProgressBar(progress: project.isFinished ? 1.0 : project.timeProgress(), color: .primary)
+                            
+                            TimeProgressBar(progress: project.isFinished ? 1.0 : project.timeProgress, color: .primary)
                             
                             HStack {
                                 if isReadOnly {
@@ -377,33 +378,29 @@ struct ProjectDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .onDisappear { onSave() }
+        .navigationBarTitleDisplayMode(.inline)
     }
     
     func deleteSpecificMilestone(_ item: Milestone) {
-        if let index = project.milestones.firstIndex(where: { $0.id == item.id }) { withAnimation { project.milestones.remove(at: index) } }
+        if let index = project.milestones.firstIndex(where: { $0.id == item.id }) { _ = withAnimation { project.milestones.remove(at: index) } }
     }
 }
 #Preview {
-    NavigationStack {
-        ProjectDetailView(
-            project: .constant(Project(
-                title: "Exemplu Proiect",
-                imageName: "star.fill",
-                type: .personal,
-                startDate: Date(),
-                dueDate: Date().addingTimeInterval(86400 * 30), // +30 zile
-                milestones: [
-                    Milestone(title: "Pasul 1 - Finalizat", isCompleted: true),
-                    Milestone(title: "Pasul 2 - Urgent", isCompleted: false, deadline: Date().addingTimeInterval(3600))
-                ],
-                reflections: [
-                    Reflection(date: Date(), text: "Prima notiță despre acest proiect.")
-                ]
-            )),
-            onSave: {
-                print("Salvare simulată")
-            }
+    do {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Project.self, configurations: config)
+        let project = Project(
+            title: "Exemplu Proiect",
+            startDate: Date(),
+            dueDate: Date().addingTimeInterval(86400 * 30),
+            type: .personal,
+            imageName: "star.fill"
         )
+        return NavigationStack {
+            ProjectDetailView(project: project)
+        }
+        .modelContainer(container)
+    } catch {
+        return Text("Preview Error: \(error.localizedDescription)")
     }
 }

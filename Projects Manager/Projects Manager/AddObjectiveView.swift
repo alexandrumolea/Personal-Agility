@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 
 struct AddObjectiveView: View {
     @Environment(\.dismiss) var dismiss
-    @Binding var objectives: [Objective]
+    @Environment(\.modelContext) private var modelContext
+    // @Binding var objectives: [Objective] - Removed
     
     @State private var newTitle = ""
     @State private var newSuccessCriteria = ""
@@ -44,8 +46,12 @@ struct AddObjectiveView: View {
                         PhotosPicker(selection: $selectedPhotoItem, matching: .images) { Label("Select Photo", systemImage: "photo") }
                     }
                 }
-                .onChange(of: selectedPhotoItem) { oldValue, newItem in
-                    Task { if let data = try? await newItem?.loadTransferable(type: Data.self) { withAnimation { selectedImageData = data } } }
+                .onChange(of: selectedPhotoItem) { _, newItem in
+                    Task {
+                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                            withAnimation { selectedImageData = data }
+                        }
+                    }
                 }
                 
                 Section(header: Text("Timeline")) {
@@ -68,25 +74,32 @@ struct AddObjectiveView: View {
             }
             .navigationTitle("New Objective")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        let newObj = Objective(
-                            title: newTitle,
-                            successCriteria: newSuccessCriteria,
-                            imageName: selectedIcon,
-                            imageData: selectedImageData,
-                            type: selectedType,
-                            startDate: startDate,
-                            dueDate: dueDate,
-                            milestones: [Milestone(title: "First step", isCompleted: false)]
-                        )
-                        objectives.append(newObj)
-                        dismiss()
-                    }
-                    .disabled(newTitle.isEmpty)
+                    Button("Save", action: saveObjective)
+                        .disabled(newTitle.isEmpty)
                 }
             }
         }
     }
+    
+    func saveObjective() {
+        let newObj = Objective(
+            title: newTitle,
+            startDate: startDate,
+            dueDate: dueDate,
+            type: selectedType
+        )
+        // Set additional properties
+        newObj.successCriteria = newSuccessCriteria
+        newObj.imageName = selectedIcon
+        newObj.imageData = selectedImageData
+        newObj.milestones = [Milestone(title: "First step", isCompleted: false)]
+        
+        modelContext.insert(newObj)
+        dismiss()
+    }
+
 }

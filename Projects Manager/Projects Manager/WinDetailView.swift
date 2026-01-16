@@ -1,8 +1,8 @@
 import SwiftUI
+import SwiftData
 
 struct WinDetailView: View {
-    @Binding var win: Win
-    var onSave: () -> Void
+    @Bindable var win: Win
     
     
     
@@ -86,8 +86,6 @@ struct WinDetailView: View {
         }
         .navigationTitle("Win Details")
         .navigationBarTitleDisplayMode(.inline)
-        .onDisappear {
-            onSave()
-        }
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

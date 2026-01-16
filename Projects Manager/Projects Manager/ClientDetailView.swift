@@ -1,8 +1,8 @@
 import SwiftUI
+import SwiftData
 
 struct ClientDetailView: View {
-    @Binding var client: Client
-    var onSave: () -> Void
+    @Bindable var client: Client
     
     @Environment(\.dismiss) var dismiss
     @State private var showingAddMeeting = false
@@ -145,7 +145,7 @@ struct ClientDetailView: View {
         }
         .navigationTitle("Client Details")
         .navigationBarTitleDisplayMode(.inline)
-        .onDisappear { onSave() }
+        .navigationBarTitleDisplayMode(.inline)
         
         // --- FEREASTRA DE EDITARE (SHEET) ---
         .sheet(item: $meetingToEdit) { meeting in

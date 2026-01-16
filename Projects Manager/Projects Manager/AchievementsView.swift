@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct AchievementsView: View {
-    @Binding var projects: [Project]
-    @Binding var objectives: [Objective]
-    @Binding var wins: [Win]
+    @Query private var projects: [Project]
+    @Query private var objectives: [Objective]
+    @Query private var wins: [Win]
+    @Environment(\.modelContext) private var modelContext
     
     @State private var showAddWinSheet = false
     
@@ -20,10 +22,10 @@ struct AchievementsView: View {
                         .listRowInsets(EdgeInsets(top: 20, leading: 20, bottom: 5, trailing: 0))
                     ) {
                         ForEach(finishedProjects) { project in
-                            if let index = projects.firstIndex(where: { $0.id == project.id }) {
+                            if projects.contains(where: { $0.id == project.id }) {
                                 ZStack {
                                     // Link către detalii (Read Only)
-                                    NavigationLink(destination: ProjectDetailView(project: $projects[index], onSave: {}, isReadOnly: true)) {
+                                    NavigationLink(destination: ProjectDetailView(project: project, isReadOnly: true)) {
                                         EmptyView()
                                     }
                                     .opacity(0)
@@ -60,10 +62,10 @@ struct AchievementsView: View {
                         .listRowInsets(EdgeInsets(top: 20, leading: 20, bottom: 5, trailing: 0))
                     ) {
                         ForEach(finishedObjectives) { obj in
-                            if let index = objectives.firstIndex(where: { $0.id == obj.id }) {
+                            if objectives.contains(where: { $0.id == obj.id }) {
                                 ZStack {
                                     // Link către detalii (Read Only)
-                                    NavigationLink(destination: ObjectiveDetailView(objective: $objectives[index], onSave: {}, isReadOnly: true)) {
+                                    NavigationLink(destination: ObjectiveDetailView(objective: obj, isReadOnly: true)) {
                                         EmptyView()
                                     }
                                     .opacity(0)
@@ -101,11 +103,9 @@ struct AchievementsView: View {
                             .listRowInsets(EdgeInsets(top: 20, leading: 20, bottom: 5, trailing: 0))
                         ) {
                             ForEach(typeWins) { win in
-                                if let index = wins.firstIndex(where: { $0.id == win.id }) {
+                                if wins.contains(where: { $0.id == win.id }) {
                                     ZStack {
-                                        NavigationLink(destination: WinDetailView(win: $wins[index], onSave: {
-                                            DataManager.shared.saveWins(wins)
-                                        })) {
+                                        NavigationLink(destination: WinDetailView(win: win)) {
                                             EmptyView()
                                         }
                                         .opacity(0)
@@ -162,7 +162,7 @@ struct AchievementsView: View {
         }
         .navigationTitle("Hall of Fame")
         .sheet(isPresented: $showAddWinSheet) {
-            AddWinView(wins: $wins)
+            AddWinView()
         }
     }
     
@@ -171,46 +171,31 @@ struct AchievementsView: View {
     func deleteProjects(at offsets: IndexSet, from filteredList: [Project]) {
         offsets.forEach { index in
             let itemToDelete = filteredList[index]
-            if let indexInMain = projects.firstIndex(where: { $0.id == itemToDelete.id }) {
-                projects.remove(at: indexInMain)
-            }
+            modelContext.delete(itemToDelete)
         }
-        DataManager.shared.saveProjects(projects)
     }
     
     func deleteObjectives(at offsets: IndexSet, from filteredList: [Objective]) {
         offsets.forEach { index in
             let itemToDelete = filteredList[index]
-            if let indexInMain = objectives.firstIndex(where: { $0.id == itemToDelete.id }) {
-                objectives.remove(at: indexInMain)
-            }
+            modelContext.delete(itemToDelete)
         }
-        DataManager.shared.saveObjectives(objectives)
     }
     
     // NEW: Delete Wins
     func deleteWins(at offsets: IndexSet, from filteredList: [Win]) {
         offsets.forEach { index in
             let itemToDelete = filteredList[index]
-            if let indexInMain = wins.firstIndex(where: { $0.id == itemToDelete.id }) {
-                wins.remove(at: indexInMain)
-            }
+            modelContext.delete(itemToDelete)
         }
-        DataManager.shared.saveWins(wins)
     }
     
     func returnProject(_ project: Project) {
-        if let index = projects.firstIndex(where: { $0.id == project.id }) {
-            projects[index].isFinished = false
-            DataManager.shared.saveProjects(projects)
-        }
+        project.isFinished = false
     }
     
     func returnObjective(_ objective: Objective) {
-        if let index = objectives.firstIndex(where: { $0.id == objective.id }) {
-            objectives[index].isFinished = false
-            DataManager.shared.saveObjectives(objectives)
-        }
+        objective.isFinished = false
     }
 }
 

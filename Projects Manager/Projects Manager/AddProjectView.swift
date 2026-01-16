@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 
 struct AddProjectView: View {
     @Environment(\.dismiss) var dismiss
-    @Binding var projects: [Project]
+    @Environment(\.modelContext) private var modelContext
+    // @Binding var projects: [Project] - Removed
     
     @State private var title = ""
     @State private var type: ProjectType = .personal
@@ -122,24 +124,30 @@ struct AddProjectView: View {
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        let newProject = Project(
-                            title: title,
-                            imageName: selectedIcon,
-                            imageData: selectedImageData,
-                            type: type,
-                            startDate: startDate,
-                            dueDate: dueDate,
-                            milestones: []
-                        )
-                        withAnimation { projects.append(newProject) }
-                        dismiss()
-                    }
-                    .disabled(title.isEmpty)
+                    Button("Create", action: saveProject)
+                        .disabled(title.isEmpty)
                 }
             }
         }
     }
+    
+    func saveProject() {
+        let newProject = Project(
+            title: title,
+            startDate: startDate,
+            dueDate: dueDate,
+            type: type,
+            imageName: selectedIcon
+        )
+        newProject.imageData = selectedImageData
+        newProject.milestones = []
+        
+        modelContext.insert(newProject)
+        dismiss()
+    }
+
 }

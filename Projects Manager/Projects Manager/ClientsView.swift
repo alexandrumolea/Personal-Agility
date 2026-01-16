@@ -1,7 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct ClientsView: View {
-    @Binding var clients: [Client]
+    @Query private var clients: [Client]
+    @Environment(\.modelContext) private var modelContext
     @State private var showAddSheet = false
     @State private var newName = ""
     @State private var newRole = ""
@@ -19,10 +21,8 @@ struct ClientsView: View {
             ZStack(alignment: .bottomTrailing) {
                 List {
                     ForEach(sortedClients) { client in
-                        if let index = clients.firstIndex(where: { $0.id == client.id }) {
-                            NavigationLink(destination: ClientDetailView(client: $clients[index], onSave: {
-                                DataManager.shared.saveClients(clients)
-                            })) {
+                        if clients.contains(where: { $0.id == client.id }) {
+                            NavigationLink(destination: ClientDetailView(client: client)) {
                                 HStack {
                                     Text(client.name.prefix(1).uppercased())
                                         .font(.headline)
@@ -89,7 +89,7 @@ struct ClientsView: View {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Save") {
                                 let newClient = Client(name: newName, role: newRole)
-                                clients.append(newClient)
+                                modelContext.insert(newClient)
                                 newName = ""; newRole = ""
                                 showAddSheet = false
                             }
@@ -104,10 +104,7 @@ struct ClientsView: View {
     
     func deleteClient(at offsets: IndexSet) {
         offsets.map { sortedClients[$0] }.forEach { clientToDelete in
-            if let index = clients.firstIndex(where: { $0.id == clientToDelete.id }) {
-                clients.remove(at: index)
-            }
+            modelContext.delete(clientToDelete)
         }
-        DataManager.shared.saveClients(clients)
     }
 }

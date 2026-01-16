@@ -38,7 +38,7 @@ struct ProjectCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(project.title).font(.headline).lineLimit(1).foregroundColor(.primary)
                 Text("Due: \(project.dueDate.formatted(date: .abbreviated, time: .omitted))").font(.caption).foregroundColor(.gray)
-                TimeProgressBar(progress: project.timeProgress(), color: .blue).padding(.top, 2)
+                TimeProgressBar(progress: project.timeProgress, color: .blue).padding(.top, 2)
             }
             Spacer()
             Image(systemName: "chevron.right").foregroundColor(.gray.opacity(0.5))

@@ -1,7 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct ObjectivesView: View {
-    @Binding var objectives: [Objective]
+    @Query private var objectives: [Objective]
+    @Environment(\.modelContext) private var modelContext
     @State private var showAddSheet = false
     
     var body: some View {
@@ -60,7 +62,7 @@ struct ObjectivesView: View {
             }
             .navigationTitle("Objectives")
             .sheet(isPresented: $showAddSheet) {
-                AddObjectiveView(objectives: $objectives)
+                AddObjectiveView()
             }
         }
     }
@@ -75,12 +77,10 @@ struct ObjectivesView: View {
             .listRowInsets(EdgeInsets(top: 20, leading: 20, bottom: 5, trailing: 0))
         ) {
             ForEach(items) { obj in
-                if let index = objectives.firstIndex(where: { $0.id == obj.id }) {
+                if objectives.contains(where: { $0.id == obj.id }) {
                     ZStack {
                         // Link invizibil
-                        NavigationLink(destination: ObjectiveDetailView(objective: $objectives[index], onSave: {
-                            DataManager.shared.saveObjectives(objectives)
-                        })) {
+                        NavigationLink(destination: ObjectiveDetailView(objective: obj)) {
                             EmptyView()
                         }
                         .opacity(0)
@@ -103,11 +103,8 @@ struct ObjectivesView: View {
     func deleteObjectives(at offsets: IndexSet, from filteredList: [Objective]) {
         offsets.forEach { index in
             let objToDelete = filteredList[index]
-            if let indexInMain = objectives.firstIndex(where: { $0.id == objToDelete.id }) {
-                objectives.remove(at: indexInMain)
-            }
+            modelContext.delete(objToDelete)
         }
-        DataManager.shared.saveObjectives(objectives)
     }
 }
 
@@ -129,8 +126,8 @@ struct ObjectiveCard: View {
                 
                 // Bara de progres (Acum o va găsi în SharedViews)
                 HStack(spacing: 4) {
-                    TimeProgressBar(progress: objective.timeProgress(), color: .primary)
-                    Text("\(Int(objective.timeProgress() * 100))%").font(.caption2).bold().foregroundColor(.primary)
+                    TimeProgressBar(progress: objective.timeProgress, color: .primary)
+                    Text("\(Int(objective.timeProgress * 100))%").font(.caption2).bold().foregroundColor(.primary)
                 }
             }
             Spacer()
@@ -145,5 +142,6 @@ struct ObjectiveCard: View {
 
 // FIX PENTRU PREVIEW
 #Preview {
-    ObjectivesView(objectives: .constant([]))
+    ObjectivesView()
+        .modelContainer(for: Objective.self, inMemory: true)
 }

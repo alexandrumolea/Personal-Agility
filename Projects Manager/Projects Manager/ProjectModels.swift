@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import SwiftData
 
 // --- ENUMS ---
 enum ProjectType: String, Codable, CaseIterable {
@@ -31,12 +32,12 @@ enum CheckInFrequency: String, Codable, CaseIterable {
     }
 }
 
-// --- SUB-STRUCTURI ---
+// --- SUB-STRUCTURI (Shared between Legacy and New) ---
 struct Milestone: Identifiable, Hashable, Codable, Equatable {
     var id = UUID()
     var title: String
     var isCompleted: Bool = false
-    var deadline: Date? = nil // NOU: Deadline opțional pentru fiecare pas
+    var deadline: Date? = nil
 }
 
 struct Meeting: Identifiable, Codable, Equatable {
@@ -51,10 +52,8 @@ struct Reflection: Identifiable, Codable, Equatable {
     var text: String
 }
 
-// --- STRUCTURI PRINCIPALE ---
-
-// PROJECT
-struct Project: Identifiable, Codable, Equatable {
+// --- LEGACY STRUCTS (For Migration) ---
+struct LegacyProject: Identifiable, Codable {
     var id = UUID()
     var title: String
     var successCriteria: String = ""
@@ -66,39 +65,111 @@ struct Project: Identifiable, Codable, Equatable {
     var dueDate: Date
     var milestones: [Milestone]
     var reflections: [Reflection] = []
+}
+
+struct LegacyClient: Identifiable, Codable {
+    var id = UUID()
+    var name: String
+    var role: String = ""
+    var frequency: CheckInFrequency = .monthly
+    var meetings: [Meeting] = []
+}
+
+struct LegacyObjective: Identifiable, Codable {
+    var id = UUID()
+    var title: String
+    var successCriteria: String = ""
+    var imageName: String = "target"
+    var imageData: Data? = nil
+    var type: ObjectiveType = .personalGrowth
+    var isFinished: Bool = false
+    var startDate: Date
+    var dueDate: Date
+    var milestones: [Milestone]
+    var reflections: [Reflection] = []
+}
+
+struct LegacyWin: Identifiable, Codable {
+    var id = UUID()
+    var title: String
+    var date: Date
+    var imageName: String = "trophy.fill"
+    var imageData: Data? = nil
+    var type: ObjectiveType = .personalGrowth
+    var whatDidYouDo: String = ""
+    var uncontrollableFactors: String = ""
+    var learnAccomplishing: String = ""
+    var learnAboutSelf: String = ""
+    var useLessonsElsewhere: String = ""
+    var helpBiggerObjectives: String = ""
+    var celebration: String = ""
+    var notes: String = ""
+}
+
+// --- SWIFTDATA MODELS ---
+
+@Model
+class Project {
+    var id: UUID = UUID()
+    var title: String = ""
+    var successCriteria: String = ""
+    var imageName: String = "folder"
+    @Attribute(.externalStorage) var imageData: Data? = nil
+    var typeRaw: String = ProjectType.personal.rawValue
+    var isFinished: Bool = false
+    var startDate: Date = Date()
+    var dueDate: Date = Date()
+    var milestones: [Milestone] = []
+    var reflections: [Reflection] = []
     
-    // NOU: Logică inteligentă de sortare
-    // Returnează data celui mai urgent milestone nefinalizat.
-    // Dacă nu există, returnează data finală a proiectului.
+    var type: ProjectType {
+        get { ProjectType(rawValue: typeRaw) ?? .personal }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    init(title: String, startDate: Date, dueDate: Date, type: ProjectType, imageName: String) {
+        self.title = title
+        self.startDate = startDate
+        self.dueDate = dueDate
+        self.typeRaw = type.rawValue
+        self.imageName = imageName
+    }
+    
+    // Logică pentru deadline
     var nextDeadline: Date {
         let activeMilestonesWithDeadlines = milestones
             .filter { !$0.isCompleted }
             .compactMap { $0.deadline }
             .sorted()
-        
         return activeMilestonesWithDeadlines.first ?? dueDate
     }
     
-    func timeProgress() -> Double {
+    var timeProgress: Double {
         let totalDuration = dueDate.timeIntervalSince(startDate)
         let timePassed = Date().timeIntervalSince(startDate)
         if timePassed < 0 { return 0.0 }
         if totalDuration <= 0 { return 0.0 }
         return min(timePassed / totalDuration, 1.0)
     }
-    
-    static func == (lhs: Project, rhs: Project) -> Bool {
-        return lhs.id == rhs.id && lhs.title == rhs.title && lhs.milestones == rhs.milestones && lhs.successCriteria == rhs.successCriteria && lhs.imageData == rhs.imageData && lhs.startDate == rhs.startDate && lhs.dueDate == rhs.dueDate && lhs.type == rhs.type && lhs.isFinished == rhs.isFinished && lhs.reflections == rhs.reflections
-    }
 }
 
-// CLIENT
-struct Client: Identifiable, Codable, Equatable {
-    var id = UUID()
-    var name: String
+@Model
+class Client {
+    var id: UUID = UUID()
+    var name: String = ""
     var role: String = ""
-    var frequency: CheckInFrequency = .monthly
+    var frequencyRaw: String = CheckInFrequency.monthly.rawValue
     var meetings: [Meeting] = []
+    
+    var frequency: CheckInFrequency {
+        get { CheckInFrequency(rawValue: frequencyRaw) ?? .monthly }
+        set { frequencyRaw = newValue.rawValue }
+    }
+    
+    init(name: String, role: String) {
+        self.name = name
+        self.role = role
+    }
     
     var lastCheckInDate: Date? { meetings.sorted(by: { $0.date > $1.date }).first?.date }
     var nextCheckInDate: Date? {
@@ -111,51 +182,49 @@ struct Client: Identifiable, Codable, Equatable {
     }
 }
 
-// OBJECTIVE
-struct Objective: Identifiable, Codable, Equatable {
-    var id = UUID()
-    var title: String
+@Model
+class Objective {
+    var id: UUID = UUID()
+    var title: String = ""
     var successCriteria: String = ""
     var imageName: String = "target"
-    var imageData: Data? = nil
-    var type: ObjectiveType = .personalGrowth
+    @Attribute(.externalStorage) var imageData: Data? = nil
+    var typeRaw: String = ObjectiveType.personalGrowth.rawValue
     var isFinished: Bool = false
-    var startDate: Date
-    var dueDate: Date
-    var milestones: [Milestone]
+    var startDate: Date = Date()
+    var dueDate: Date = Date()
+    var milestones: [Milestone] = []
     var reflections: [Reflection] = []
     
-    func timeProgress() -> Double {
+    var type: ObjectiveType {
+        get { ObjectiveType(rawValue: typeRaw) ?? .personalGrowth }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    init(title: String, startDate: Date, dueDate: Date, type: ObjectiveType) {
+        self.title = title
+        self.startDate = startDate
+        self.dueDate = dueDate
+        self.typeRaw = type.rawValue
+    }
+    
+    var timeProgress: Double {
         let totalDuration = dueDate.timeIntervalSince(startDate)
         let timePassed = Date().timeIntervalSince(startDate)
         if timePassed < 0 { return 0.0 }
         if totalDuration <= 0 { return 0.0 }
         return min(timePassed / totalDuration, 1.0)
     }
-    
-    static func == (lhs: Objective, rhs: Objective) -> Bool {
-        return lhs.id == rhs.id &&
-               lhs.title == rhs.title &&
-               lhs.successCriteria == rhs.successCriteria &&
-               lhs.imageName == rhs.imageName &&
-               lhs.imageData == rhs.imageData &&
-               lhs.type == rhs.type &&
-               lhs.isFinished == rhs.isFinished &&
-               lhs.startDate == rhs.startDate &&
-               lhs.dueDate == rhs.dueDate &&
-               lhs.milestones == rhs.milestones &&
-               lhs.reflections == rhs.reflections
-    }
 }
 
-// WIN
-struct Win: Identifiable, Codable, Equatable {
-    var id = UUID()
-    var title: String
-    var date: Date
+@Model
+class Win {
+    var id: UUID = UUID()
+    var title: String = ""
+    var date: Date = Date()
     var imageName: String = "trophy.fill"
-    var imageData: Data? = nil
-    var type: ObjectiveType = .personalGrowth
+    @Attribute(.externalStorage) var imageData: Data? = nil
+    var typeRaw: String = ObjectiveType.personalGrowth.rawValue
     
     // Questionnaire
     var whatDidYouDo: String = ""
@@ -166,4 +235,17 @@ struct Win: Identifiable, Codable, Equatable {
     var helpBiggerObjectives: String = ""
     var celebration: String = ""
     var notes: String = ""
+    
+    var type: ObjectiveType {
+        get { ObjectiveType(rawValue: typeRaw) ?? .personalGrowth }
+        set { typeRaw = newValue.rawValue }
+    }
+    
+    init(title: String, date: Date, imageName: String = "trophy.fill", imageData: Data? = nil, type: ObjectiveType = .personalGrowth) {
+        self.title = title
+        self.date = date
+        self.imageName = imageName
+        self.imageData = imageData
+        self.typeRaw = type.rawValue
+    }
 }

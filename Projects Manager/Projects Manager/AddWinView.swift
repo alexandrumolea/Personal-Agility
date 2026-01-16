@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 
 struct AddWinView: View {
     @Environment(\.dismiss) var dismiss
-    @Binding var wins: [Win]
+    @Environment(\.modelContext) private var modelContext
+    // @Binding var wins: [Win] - Removed
     
     @State private var newTitle = ""
     @State private var selectedType: ObjectiveType = .personalGrowth
@@ -92,25 +94,25 @@ struct AddWinView: View {
             .navigationTitle("New Win")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        let newWin = Win(
-                            title: newTitle,
-                            date: winDate,
-                            imageName: selectedIcon,
-                            imageData: selectedImageData,
-                            type: selectedType
-                        )
-                        wins.append(newWin)
-                        dismiss()
-                    }
-                    .disabled(newTitle.isEmpty)
+                    Button("Save", action: saveWin)
+                        .disabled(newTitle.isEmpty)
                 }
             }
         }
+    }
+    
+    func saveWin() {
+        let newWin = Win(
+            title: newTitle,
+            date: winDate,
+            imageName: selectedIcon,
+            imageData: selectedImageData,
+            type: selectedType
+        )
+        modelContext.insert(newWin)
+        dismiss()
     }
 }

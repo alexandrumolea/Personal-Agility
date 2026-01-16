@@ -1,7 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct ProjectListView: View {
-    @Binding var projects: [Project]
+    @Query private var projects: [Project]
+    @Environment(\.modelContext) private var modelContext
     @State private var showAddSheet = false
     
     var body: some View {
@@ -16,11 +18,9 @@ struct ProjectListView: View {
                 if !workProjects.isEmpty {
                     Section(header: Text("Work Projects").font(.title2).bold().foregroundColor(.primary).textCase(nil).listRowInsets(EdgeInsets(top: 20, leading: 20, bottom: 5, trailing: 0))) {
                         ForEach(workProjects) { project in
-                            if let index = projects.firstIndex(where: { $0.id == project.id }) {
+                            if projects.contains(where: { $0.id == project.id }) {
                                 ZStack {
-                                    NavigationLink(destination: ProjectDetailView(project: $projects[index], onSave: {
-                                        DataManager.shared.saveProjects(projects)
-                                    })) {
+                                    NavigationLink(destination: ProjectDetailView(project: project)) {
                                         EmptyView()
                                     }
                                     .opacity(0)
@@ -46,11 +46,9 @@ struct ProjectListView: View {
                 if !personalProjects.isEmpty {
                     Section(header: Text("Personal Projects").font(.title2).bold().foregroundColor(.primary).textCase(nil).listRowInsets(EdgeInsets(top: 20, leading: 20, bottom: 5, trailing: 0))) {
                         ForEach(personalProjects) { project in
-                            if let index = projects.firstIndex(where: { $0.id == project.id }) {
+                            if projects.contains(where: { $0.id == project.id }) {
                                 ZStack {
-                                    NavigationLink(destination: ProjectDetailView(project: $projects[index], onSave: {
-                                        DataManager.shared.saveProjects(projects)
-                                    })) {
+                                    NavigationLink(destination: ProjectDetailView(project: project)) {
                                         EmptyView()
                                     }
                                     .opacity(0)
@@ -94,17 +92,14 @@ struct ProjectListView: View {
         }
         .navigationTitle("Dashboard")
         .sheet(isPresented: $showAddSheet) {
-            AddProjectView(projects: $projects)
+            AddProjectView()
         }
     }
     
     func deleteProjects(at offsets: IndexSet, from filteredList: [Project]) {
         offsets.forEach { index in
             let projectToDelete = filteredList[index]
-            if let indexInMain = projects.firstIndex(where: { $0.id == projectToDelete.id }) {
-                projects.remove(at: indexInMain)
-            }
+            modelContext.delete(projectToDelete)
         }
-        DataManager.shared.saveProjects(projects)
     }
 }

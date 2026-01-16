@@ -1,15 +1,16 @@
 import SwiftUI
 import PhotosUI
+import SwiftData
 
 struct ObjectiveDetailView: View {
-    @Binding var objective: Objective
-    var onSave: () -> Void
+    @Bindable var objective: Objective
     var isReadOnly: Bool = false
     
     @Environment(\.dismiss) var dismiss
     @State private var newMilestoneTitle = ""
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var isEditingSuccess = false
+    @State private var tempSuccessCriteria = ""
     @FocusState private var isSuccessFocused: Bool
     @State private var newReflectionText = ""
     @State private var isAddingReflection = false
@@ -105,16 +106,29 @@ struct ObjectiveDetailView: View {
                             HStack {
                                 Text("How do you define success?").font(.headline).fontDesign(.rounded)
                                 Spacer()
-                                if isEditingSuccess && !isReadOnly { Button("Done") { isEditingSuccess = false; isSuccessFocused = false }.font(.subheadline).bold().foregroundColor(.primary) }
+                                if isEditingSuccess && !isReadOnly {
+                                    Button("Done") {
+                                        objective.successCriteria = tempSuccessCriteria
+                                        isEditingSuccess = false
+                                        isSuccessFocused = false
+                                    }
+                                    .font(.subheadline).bold().foregroundColor(.primary)
+                                }
                             }
                             ZStack(alignment: .topLeading) {
                                 if isEditingSuccess && !isReadOnly {
-                                    TextEditor(text: $objective.successCriteria).focused($isSuccessFocused).frame(minHeight: 60).padding(4).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 1))
+                                    TextEditor(text: $tempSuccessCriteria).focused($isSuccessFocused).frame(minHeight: 60).padding(4).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 1))
                                 } else {
                                     Text(objective.successCriteria.isEmpty ? "Define your 'Why'..." : objective.successCriteria)
                                         .font(.subheadline).foregroundColor(objective.successCriteria.isEmpty ? .gray : .primary).frame(maxWidth: .infinity, alignment: .leading).padding(10).background(.ultraThinMaterial).cornerRadius(12)
                                         .fixedSize(horizontal: false, vertical: true)
-                                        .onTapGesture { if !isReadOnly { isEditingSuccess = true; isSuccessFocused = true } }
+                                        .onTapGesture {
+                                            if !isReadOnly {
+                                                tempSuccessCriteria = objective.successCriteria
+                                                isEditingSuccess = true
+                                                isSuccessFocused = true
+                                            }
+                                        }
                                 }
                             }
                         }
@@ -124,9 +138,9 @@ struct ObjectiveDetailView: View {
                             HStack {
                                 Text("Timeline").font(.headline).fontDesign(.rounded)
                                 Spacer()
-                                Text(objective.isFinished ? "100%" : "\(Int(objective.timeProgress() * 100))%").font(.caption).bold().foregroundColor(.primary)
+                                Text(objective.isFinished ? "100%" : "\(Int(objective.timeProgress * 100))%").font(.caption).bold().foregroundColor(.primary)
                             }
-                            TimeProgressBar(progress: objective.isFinished ? 1.0 : objective.timeProgress(), color: .primary)
+                            TimeProgressBar(progress: objective.isFinished ? 1.0 : objective.timeProgress, color: .primary)
                             HStack {
                                 if isReadOnly {
                                     Text(objective.startDate.formatted(date: .abbreviated, time: .omitted)).font(.subheadline).foregroundColor(.gray)
@@ -250,11 +264,15 @@ struct ObjectiveDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .onDisappear { onSave() }
+        .onDisappear {
+            if isEditingSuccess {
+                objective.successCriteria = tempSuccessCriteria
+            }
+        }
     }
     
     func deleteSpecificMilestone(_ item: Milestone) {
-        if let index = objective.milestones.firstIndex(where: { $0.id == item.id }) { withAnimation { objective.milestones.remove(at: index) } }
+        if let index = objective.milestones.firstIndex(where: { $0.id == item.id }) { _ = withAnimation { objective.milestones.remove(at: index) } }
     }
 }
 
