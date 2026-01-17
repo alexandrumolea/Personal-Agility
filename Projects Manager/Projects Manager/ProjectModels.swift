@@ -169,6 +169,7 @@ class Client {
     var frequencyRaw: String = CheckInFrequency.monthly.rawValue
     var statusRaw: String = ClientStatus.active.rawValue
     var meetings: [Meeting] = []
+    var reflections: [Reflection] = []
     
     var frequency: CheckInFrequency {
         get { CheckInFrequency(rawValue: frequencyRaw) ?? .monthly }

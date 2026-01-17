@@ -18,6 +18,40 @@ struct ClientDetailView: View {
     @State private var selectedImageData: Data? = nil
     @State private var zoomImage: Data? = nil // Pentru afișare full screen
 
+    // State pentru tipul de intrare (Meeting vs Reflection)
+    @State private var entryType: EntryType = .meeting
+    
+    enum EntryType: String, CaseIterable {
+        case meeting = "Meeting"
+        case reflection = "Reflection"
+    }
+    
+    // Helper pentru istoric unificat
+    enum HistoryItem: Identifiable {
+        case meeting(Meeting)
+        case reflection(Reflection)
+        
+        var id: UUID {
+            switch self {
+            case .meeting(let m): return m.id
+            case .reflection(let r): return r.id
+            }
+        }
+        
+        var date: Date {
+            switch self {
+            case .meeting(let m): return m.date
+            case .reflection(let r): return r.date
+            }
+        }
+    }
+    
+    var sortedHistory: [HistoryItem] {
+        let ms = client.meetings.map { HistoryItem.meeting($0) }
+        let rs = client.reflections.map { HistoryItem.reflection($0) }
+        return (ms + rs).sorted { $0.date > $1.date }
+    }
+
     var body: some View {
         List {
             // --- SECTION 1: HEADER & INFO ---
@@ -109,67 +143,86 @@ struct ClientDetailView: View {
                 }
             }
             
-            // --- SECTION 2: ADD CHECK-IN ---
+            // --- SECTION 2: ADD ACTIVITY ---
             Section {
                 Button {
                     withAnimation { showingAddMeeting.toggle() }
                 } label: {
                     HStack {
                         Image(systemName: "plus.bubble.fill").foregroundColor(.blue)
-                        Text("Log New Meeting / Check-in").bold().foregroundColor(.blue)
+                        Text("Log New Activity").bold().foregroundColor(.blue)
                     }
                 }
                 
                 if showingAddMeeting {
                     VStack(alignment: .leading, spacing: 10) {
+                        Picker("Type", selection: $entryType) {
+                            ForEach(EntryType.allCases, id: \.self) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.bottom, 5)
+                        
                         DatePicker("Date", selection: $newMeetingDate, displayedComponents: .date)
                         
-                        Text("Notes & Conclusions:")
+                        Text(entryType == .meeting ? "Notes & Conclusions:" : "Reflection / Context:")
                             .font(.caption).foregroundColor(.gray)
                         TextEditor(text: $newMeetingNote)
                             .frame(height: 80)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3), lineWidth: 1))
                         
-                        // FOTO ATAȘAMENT
-                        HStack {
-                            if let data = selectedImageData, let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .onTapGesture {
-                                        // Remove photo
-                                        withAnimation { selectedImageData = nil; selectedItem = nil }
+                        // FOTO ATAȘAMENT (Doar pentru Meeting momentan sau ambele?)
+                        // User a cerut reflections "care să nu influențeze check-in". Nu a specificat poze.
+                        // Voi lăsa pozele doar la Meetings pentru claritate și simplitate, conform cerinței "Reflections (Notes...)".
+                        if entryType == .meeting {
+                            HStack {
+                                if let data = selectedImageData, let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .onTapGesture {
+                                            // Remove photo
+                                            withAnimation { selectedImageData = nil; selectedItem = nil }
+                                        }
+                                } else {
+                                    PhotosPicker(selection: $selectedItem, matching: .images) {
+                                        HStack {
+                                            Image(systemName: "camera.fill")
+                                            Text("Attach Photo")
+                                        }
+                                        .font(.caption).bold()
+                                        .padding(8)
+                                        .background(Color.gray.opacity(0.1))
+                                        .clipShape(Capsule())
                                     }
-                            } else {
-                                PhotosPicker(selection: $selectedItem, matching: .images) {
-                                    HStack {
-                                        Image(systemName: "camera.fill")
-                                        Text("Attach Photo")
-                                    }
-                                    .font(.caption).bold()
-                                    .padding(8)
-                                    .background(Color.gray.opacity(0.1))
-                                    .clipShape(Capsule())
                                 }
                             }
-                        }
-                        .onChange(of: selectedItem) { oldValue, newItem in
-                            Task {
-                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                    withAnimation { selectedImageData = data }
+                            .onChange(of: selectedItem) { oldValue, newItem in
+                                Task {
+                                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                        withAnimation { selectedImageData = data }
+                                    }
                                 }
                             }
                         }
                         
-                        Button("Save Check-in") {
-                            var newMeeting = Meeting(date: newMeetingDate, conclusion: newMeetingNote)
-                            newMeeting.imageData = selectedImageData // Salvăm poza
+                        Button("Save \(entryType.rawValue)") {
                             withAnimation {
-                                client.meetings.insert(newMeeting, at: 0)
+                                if entryType == .meeting {
+                                    var newMeeting = Meeting(date: newMeetingDate, conclusion: newMeetingNote)
+                                    newMeeting.imageData = selectedImageData
+                                    client.meetings.insert(newMeeting, at: 0)
+                                } else {
+                                    let newReflection = Reflection(date: newMeetingDate, text: newMeetingNote)
+                                    client.reflections.insert(newReflection, at: 0)
+                                }
+                                
+                                // Reset
                                 newMeetingNote = ""
-                                selectedImageData = nil // Resetăm poza
+                                selectedImageData = nil
                                 selectedItem = nil
                                 showingAddMeeting = false
                             }
@@ -183,55 +236,107 @@ struct ClientDetailView: View {
             }
             
             // --- SECTION 3: HISTORY (EDITABLE) ---
-            if !client.meetings.isEmpty {
+            if !sortedHistory.isEmpty {
                 Section(header: Text("History")) {
-                    ForEach(client.meetings) { meeting in
-                        VStack(alignment: .leading, spacing: 10) {
-                            // 1. Text Button (Edit)
-                            Button {
-                                meetingToEdit = meeting
-                            } label: {
-                                HStack(alignment: .top) {
-                                    VStack(alignment: .leading) {
-                                        Text(meeting.date.formatted(date: .abbreviated, time: .omitted))
-                                            .font(.caption).bold()
-                                            .foregroundColor(.secondary)
-                                        Text(meeting.conclusion)
-                                            .font(.body)
-                                            .foregroundColor(.primary)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                    Spacer()
-                                    Image(systemName: "pencil")
-                                        .font(.caption)
-                                        .foregroundColor(.gray.opacity(0.5))
-                                }
-                                .contentShape(Rectangle()) // Make the whole specific area clickable
-                            }
-                            .buttonStyle(BorderlessButtonStyle())
-                            
-                            // 2. Image Button (Zoom)
-                            if let data = meeting.imageData, let uiImage = UIImage(data: data) {
+                    ForEach(sortedHistory) { item in
+                        switch item {
+                        case .meeting(let meeting):
+                            // UI PENTRU MEETING
+                            VStack(alignment: .leading, spacing: 10) {
+                                // 1. Text Button (Edit)
                                 Button {
-                                    zoomImage = data
+                                    meetingToEdit = meeting
                                 } label: {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(height: 200)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                    HStack(alignment: .top) {
+                                        VStack(alignment: .leading) {
+                                            HStack {
+                                                Image(systemName: "bubble.left.and.bubble.right.fill")
+                                                    .foregroundColor(.blue)
+                                                    .font(.caption2)
+                                                Text(meeting.date.formatted(date: .abbreviated, time: .omitted))
+                                                    .font(.caption).bold()
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            Text(meeting.conclusion)
+                                                .font(.body)
+                                                .foregroundColor(.primary)
+                                                .multilineTextAlignment(.leading)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "pencil")
+                                            .font(.caption)
+                                            .foregroundColor(.gray.opacity(0.5))
+                                    }
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(BorderlessButtonStyle())
+                                
+                                // 2. Image Button (Zoom)
+                                if let data = meeting.imageData, let uiImage = UIImage(data: data) {
+                                    Button {
+                                        zoomImage = data
+                                    } label: {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(height: 200)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                    }
+                                    .buttonStyle(BorderlessButtonStyle())
+                                }
+                            }
+                            .padding(.vertical, 8)
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    if let idx = client.meetings.firstIndex(where: { $0.id == meeting.id }) {
+                                        withAnimation { client.meetings.remove(at: idx) }
+                                    }
+                                } label: { Label("Delete", systemImage: "trash") }
+                            }
+
+                        case .reflection(let reflection):
+                            // UI PENTRU REFLECTION
+                            VStack(alignment: .leading) {
+                                HStack(alignment: .top) {
+                                    VStack(alignment: .leading) {
+                                        HStack {
+                                            Image(systemName: "doc.text.fill")
+                                                .foregroundColor(.purple)
+                                                .font(.caption2)
+                                            Text(reflection.date.formatted(date: .abbreviated, time: .omitted))
+                                                .font(.caption).bold()
+                                                .foregroundColor(.secondary)
+                                            Text("Reflection")
+                                                .font(.caption)
+                                                .foregroundColor(.purple.opacity(0.7))
+                                                .padding(.horizontal, 4)
+                                                .padding(.vertical, 1)
+                                                .background(Color.purple.opacity(0.1))
+                                                .clipShape(Capsule())
+                                        }
+                                        Text(reflection.text)
+                                            .font(.body)
+                                            .foregroundColor(.secondary)
+                                            .italic()
+                                    }
+                                    Spacer()
+                                }
+                            }
+                            .padding(.vertical, 8)
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    if let idx = client.reflections.firstIndex(where: { $0.id == reflection.id }) {
+                                        withAnimation { client.reflections.remove(at: idx) }
+                                    }
+                                } label: { Label("Delete", systemImage: "trash") }
                             }
                         }
-                        .padding(.vertical, 8)
                     }
-                    .onDelete(perform: deleteMeeting) // ACTIVARE SWIPE TO DELETE
                 }
             } else {
                 Section {
-                    ContentUnavailableView("No history", systemImage: "text.bubble", description: Text("Log your first meeting."))
+                    ContentUnavailableView("No history", systemImage: "list.bullet.clipboard", description: Text("Log your first meeting or reflection."))
                 }
             }
         }
@@ -259,13 +364,7 @@ struct ClientDetailView: View {
         return "\(first)\(last)".uppercased()
     }
     
-    // Funcție pentru ștergere
-    func deleteMeeting(at offsets: IndexSet) {
-        withAnimation {
-            client.meetings.remove(atOffsets: offsets)
-        }
     }
-}
 
 // --- STRUCTURĂ SEPARATĂ PENTRU EDITARE ---
 struct EditMeetingSheet: View {
