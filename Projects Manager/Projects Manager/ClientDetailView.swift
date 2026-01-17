@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct ClientDetailView: View {
     @Bindable var client: Client
@@ -11,6 +12,11 @@ struct ClientDetailView: View {
     
     // State pentru editare
     @State private var meetingToEdit: Meeting? = nil
+    
+    // State pentru foto
+    @State private var selectedItem: PhotosPickerItem? = nil
+    @State private var selectedImageData: Data? = nil
+    @State private var zoomImage: Data? = nil // Pentru afișare full screen
 
     var body: some View {
         List {
@@ -124,11 +130,47 @@ struct ClientDetailView: View {
                             .frame(height: 80)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3), lineWidth: 1))
                         
+                        // FOTO ATAȘAMENT
+                        HStack {
+                            if let data = selectedImageData, let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 60, height: 60)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .onTapGesture {
+                                        // Remove photo
+                                        withAnimation { selectedImageData = nil; selectedItem = nil }
+                                    }
+                            } else {
+                                PhotosPicker(selection: $selectedItem, matching: .images) {
+                                    HStack {
+                                        Image(systemName: "camera.fill")
+                                        Text("Attach Photo")
+                                    }
+                                    .font(.caption).bold()
+                                    .padding(8)
+                                    .background(Color.gray.opacity(0.1))
+                                    .clipShape(Capsule())
+                                }
+                            }
+                        }
+                        .onChange(of: selectedItem) { oldValue, newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                    withAnimation { selectedImageData = data }
+                                }
+                            }
+                        }
+                        
                         Button("Save Check-in") {
-                            let newMeeting = Meeting(date: newMeetingDate, conclusion: newMeetingNote)
+                            var newMeeting = Meeting(date: newMeetingDate, conclusion: newMeetingNote)
+                            newMeeting.imageData = selectedImageData // Salvăm poza
                             withAnimation {
                                 client.meetings.insert(newMeeting, at: 0)
                                 newMeetingNote = ""
+                                selectedImageData = nil // Resetăm poza
+                                selectedItem = nil
                                 showingAddMeeting = false
                             }
                         }
@@ -144,27 +186,46 @@ struct ClientDetailView: View {
             if !client.meetings.isEmpty {
                 Section(header: Text("History")) {
                     ForEach(client.meetings) { meeting in
-                        Button {
-                            // Deschidem fereastra de editare
-                            meetingToEdit = meeting
-                        } label: {
-                            HStack(alignment: .top) {
-                                VStack(alignment: .leading) {
-                                    Text(meeting.date.formatted(date: .abbreviated, time: .omitted))
-                                        .font(.caption).bold()
-                                        .foregroundColor(.secondary)
-                                    Text(meeting.conclusion)
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                        .multilineTextAlignment(.leading)
+                        VStack(alignment: .leading, spacing: 10) {
+                            // 1. Text Button (Edit)
+                            Button {
+                                meetingToEdit = meeting
+                            } label: {
+                                HStack(alignment: .top) {
+                                    VStack(alignment: .leading) {
+                                        Text(meeting.date.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.caption).bold()
+                                            .foregroundColor(.secondary)
+                                        Text(meeting.conclusion)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "pencil")
+                                        .font(.caption)
+                                        .foregroundColor(.gray.opacity(0.5))
                                 }
-                                Spacer()
-                                Image(systemName: "pencil") // Iconiță discretă că se poate edita
-                                    .font(.caption)
-                                    .foregroundColor(.gray.opacity(0.5))
+                                .contentShape(Rectangle()) // Make the whole specific area clickable
                             }
-                            .padding(.vertical, 4)
+                            .buttonStyle(BorderlessButtonStyle())
+                            
+                            // 2. Image Button (Zoom)
+                            if let data = meeting.imageData, let uiImage = UIImage(data: data) {
+                                Button {
+                                    zoomImage = data
+                                } label: {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(height: 200)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                }
+                                .buttonStyle(BorderlessButtonStyle())
+                            }
                         }
+                        .padding(.vertical, 8)
                     }
                     .onDelete(perform: deleteMeeting) // ACTIVARE SWIPE TO DELETE
                 }
@@ -184,6 +245,9 @@ struct ClientDetailView: View {
             if let index = client.meetings.firstIndex(where: { $0.id == meeting.id }) {
                 EditMeetingSheet(meeting: $client.meetings[index])
             }
+        }
+        .fullScreenCover(item: $zoomImage) { data in
+             ZoomableImageView(imageData: data)
         }
     }
     
@@ -232,4 +296,8 @@ struct EditMeetingSheet: View {
         }
         .presentationDetents([.medium, .large]) // Fereastra apare până la jumătate sau complet
     }
+}
+
+extension Data: @retroactive Identifiable {
+    public var id: String { self.hashValue.description }
 }

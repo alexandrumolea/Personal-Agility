@@ -51,6 +51,7 @@ struct Meeting: Identifiable, Codable, Equatable {
     var id = UUID()
     var date: Date
     var conclusion: String
+    var imageData: Data? = nil
 }
 
 struct Reflection: Identifiable, Codable, Equatable {
