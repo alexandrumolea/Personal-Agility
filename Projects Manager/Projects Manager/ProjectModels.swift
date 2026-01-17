@@ -30,6 +30,13 @@ enum CheckInFrequency: String, Codable, CaseIterable {
         case .none: return 0
         }
     }
+
+}
+
+enum ClientStatus: String, Codable, CaseIterable {
+    case active = "Client"
+    case coaching = "Coaching Client"
+    case prospect = "Prospect"
 }
 
 // --- SUB-STRUCTURI (Shared between Legacy and New) ---
@@ -159,6 +166,7 @@ class Client {
     var name: String = ""
     var role: String = ""
     var frequencyRaw: String = CheckInFrequency.monthly.rawValue
+    var statusRaw: String = ClientStatus.active.rawValue
     var meetings: [Meeting] = []
     
     var frequency: CheckInFrequency {
@@ -166,9 +174,15 @@ class Client {
         set { frequencyRaw = newValue.rawValue }
     }
     
-    init(name: String, role: String) {
+    var status: ClientStatus {
+        get { ClientStatus(rawValue: statusRaw) ?? .active }
+        set { statusRaw = newValue.rawValue }
+    }
+    
+    init(name: String, role: String, status: ClientStatus = .active) {
         self.name = name
         self.role = role
+        self.statusRaw = status.rawValue
     }
     
     var lastCheckInDate: Date? { meetings.sorted(by: { $0.date > $1.date }).first?.date }

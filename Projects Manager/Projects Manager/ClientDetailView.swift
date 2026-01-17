@@ -39,6 +39,37 @@ struct ClientDetailView: View {
                     
                     Divider()
                     
+                    // Client Status
+                    HStack {
+                        Image(systemName: "person.crop.circle.badge.questionmark").foregroundColor(.orange)
+                        Text("Status")
+                        Spacer()
+                        Menu {
+                            ForEach(ClientStatus.allCases, id: \.self) { status in
+                                Button {
+                                    withAnimation { client.status = status }
+                                } label: {
+                                    if client.status == status {
+                                        Label(status.rawValue, systemImage: "checkmark")
+                                    } else {
+                                        Text(status.rawValue)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Text(client.status.rawValue)
+                                .font(.subheadline)
+                                .bold()
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(client.status == .active ? Color.blue.opacity(0.1) : (client.status == .coaching ? Color.purple.opacity(0.1) : Color.orange.opacity(0.1)))
+                                .foregroundColor(client.status == .active ? .blue : (client.status == .coaching ? .purple : .orange))
+                                .clipShape(Capsule())
+                        }
+                    }
+                    
+                    Divider()
+                    
                     // Setări Frecvență
                     HStack {
                         Image(systemName: "clock.arrow.circlepath").foregroundColor(.blue)
