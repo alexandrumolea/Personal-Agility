@@ -134,9 +134,9 @@ struct ObjectiveCard: View {
             Image(systemName: "chevron.right").foregroundColor(.gray.opacity(0.5))
         }
         .padding()
-        .background(Color.white)
+        .background(.regularMaterial)
         .cornerRadius(15)
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .shadow(color: .primary.opacity(0.1), radius: 2, x: 0, y: 1)
     }
 }
 

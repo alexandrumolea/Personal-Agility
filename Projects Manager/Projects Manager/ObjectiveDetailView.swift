@@ -182,7 +182,12 @@ struct ObjectiveDetailView: View {
                             if !milestone.isCompleted {
                                 HStack {
                                     Image(systemName: "circle").foregroundColor(.gray).onTapGesture { if !isReadOnly { withAnimation { milestone.isCompleted = true } } }
-                                    if isReadOnly { Text(milestone.title) } else { TextField("Task", text: $milestone.title) }
+                                    if isReadOnly {
+                                        Text(milestone.title)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    } else {
+                                        TextField("Task", text: $milestone.title, axis: .vertical)
+                                    }
                                 }
                                 .swipeActions(edge: .trailing) {
                                     if !isReadOnly { Button(role: .destructive) { deleteSpecificMilestone(milestone) } label: { Label("Delete", systemImage: "trash") } }

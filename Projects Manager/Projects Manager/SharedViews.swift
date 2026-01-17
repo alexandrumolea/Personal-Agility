@@ -44,9 +44,9 @@ struct ProjectCard: View {
             Image(systemName: "chevron.right").foregroundColor(.gray.opacity(0.5))
         }
         .padding()
-        .background(Color.white)
+        .background(.regularMaterial)
         .cornerRadius(15)
-        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .shadow(color: .primary.opacity(0.1), radius: 5, x: 0, y: 2)
     }
 }
 // ... Păstrează codul existent pentru TimeProgressBar și ProjectCard ...

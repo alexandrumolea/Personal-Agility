@@ -253,8 +253,9 @@ struct ProjectDetailView: View {
                                     
                                     if isReadOnly {
                                         Text(milestone.title)
+                                            .fixedSize(horizontal: false, vertical: true)
                                     } else {
-                                        TextField("Task", text: $milestone.title)
+                                        TextField("Task", text: $milestone.title, axis: .vertical)
                                     }
                                 }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
