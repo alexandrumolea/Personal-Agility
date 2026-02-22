@@ -24,6 +24,9 @@ struct Projects_ManagerApp: App {
             
             container = try ModelContainer(for: schema, configurations: [modelConfiguration])
             
+            // Request notification permissions
+            NotificationManager.shared.requestAuthorization()
+            
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }

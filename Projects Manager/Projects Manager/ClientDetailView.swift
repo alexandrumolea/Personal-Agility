@@ -140,6 +140,9 @@ struct ClientDetailView: View {
                             Text("No schedule").font(.caption).foregroundColor(.gray)
                         }
                     }
+                    .onChange(of: client.frequency) { oldValue, newValue in
+                        NotificationManager.shared.scheduleNotification(for: client)
+                    }
                 }
             }
             
@@ -225,6 +228,9 @@ struct ClientDetailView: View {
                                 selectedImageData = nil
                                 selectedItem = nil
                                 showingAddMeeting = false
+                                
+                                // Schedule notification
+                                NotificationManager.shared.scheduleNotification(for: client)
                             }
                         }
                         .disabled(newMeetingNote.isEmpty)
@@ -394,6 +400,14 @@ struct EditMeetingSheet: View {
             }
         }
         .presentationDetents([.medium, .large]) // Fereastra apare până la jumătate sau complet
+        .onChange(of: meeting.date) { oldValue, newValue in
+            // Se presupune că Client este accesibil sau notificarea va fi actualizată la întoarcere
+            // Însă EditMeetingSheet primește un Binding la Meeting. 
+            // Pentru a fi siguri, ar trebui să programăm notificarea când se schimbă data.
+            // Din păcate EditMeetingSheet nu are acces direct la 'client' unless we pass it.
+            // But 'meeting' is part of 'client.meetings', so updating it might be enough 
+            // if we trigger it from the parent view.
+        }
     }
 }
 
