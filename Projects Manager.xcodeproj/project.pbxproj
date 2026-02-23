@@ -11,9 +11,22 @@
 		C0F86A722F4A29ED0069D551 /* Projects Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Projects Manager.xcodeproj"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C0F86ABA2F4C7D790069D551 /* Exceptions for "Projects Manager" folder in "Projects Manager" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Projects-Manager-Info.plist",
+			);
+			target = C05B2BDF2F09582A00C9DA60 /* Projects Manager */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C05B2BE22F09582A00C9DA60 /* Projects Manager */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C0F86ABA2F4C7D790069D551 /* Exceptions for "Projects Manager" folder in "Projects Manager" target */,
+			);
 			path = "Projects Manager";
 			sourceTree = "<group>";
 		};
@@ -270,6 +283,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Projects-Manager-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Agile Self";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -319,6 +333,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Projects-Manager-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Agile Self";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
