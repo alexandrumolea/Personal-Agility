@@ -3,6 +3,7 @@ import SwiftUI
 enum AppScreen: Hashable, CaseIterable, Identifiable {
     case dashboard
     case clients
+    case opportunities
     case objectives
     case hallOfFame
     
@@ -12,6 +13,7 @@ enum AppScreen: Hashable, CaseIterable, Identifiable {
         switch self {
         case .dashboard: return "Dashboard"
         case .clients: return "Clients"
+        case .opportunities: return "Opportunities"
         case .objectives: return "Objectives"
         case .hallOfFame: return "Hall of Fame"
         }
@@ -21,6 +23,7 @@ enum AppScreen: Hashable, CaseIterable, Identifiable {
         switch self {
         case .dashboard: return "square.stack.3d.up.fill"
         case .clients: return "person.2.fill"
+        case .opportunities: return "eurosign.circle.fill"
         case .objectives: return "target"
         case .hallOfFame: return "trophy.fill"
         }

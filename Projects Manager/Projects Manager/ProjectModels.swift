@@ -39,6 +39,12 @@ enum ClientStatus: String, Codable, CaseIterable {
     case prospect = "Prospect"
 }
 
+enum OpportunityStatus: String, Codable, CaseIterable {
+    case active = "Active"
+    case lost = "Lost"
+    case won = "Won"
+}
+
 // --- SUB-STRUCTURI (Shared between Legacy and New) ---
 struct Milestone: Identifiable, Hashable, Codable, Equatable {
     var id = UUID()
@@ -195,6 +201,30 @@ class Client {
     var isOverdue: Bool {
         guard let next = nextCheckInDate else { return false }
         return Date() > next
+    }
+}
+
+@Model
+class Opportunity {
+    var id: UUID = UUID()
+    var name: String = ""
+    var client: String = ""
+    var details: String = ""
+    var amount: Double = 0
+    var statusRaw: String = OpportunityStatus.active.rawValue
+    var createdAt: Date = Date()
+    
+    var status: OpportunityStatus {
+        get { OpportunityStatus(rawValue: statusRaw) ?? .active }
+        set { statusRaw = newValue.rawValue }
+    }
+    
+    init(name: String, client: String, details: String, amount: Double, status: OpportunityStatus = .active) {
+        self.name = name
+        self.client = client
+        self.details = details
+        self.amount = amount
+        self.statusRaw = status.rawValue
     }
 }
 

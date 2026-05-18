@@ -27,6 +27,8 @@ struct AppSplitView: View {
             case .clients:
                 // ClientsView already has NavigationStack
                 ClientsView()
+            case .opportunities:
+                OpportunitiesView()
             case .objectives:
                 // ObjectivesView already has NavigationStack
                 ObjectivesView()
@@ -53,10 +55,14 @@ struct AppTabView: View {
             .tabItem { Label("Clients", systemImage: "person.2.fill") }
             
             // TAB 3
+            OpportunitiesView()
+            .tabItem { Label("Opportunities", systemImage: "eurosign.circle.fill") }
+            
+            // TAB 4
             ObjectivesView()
             .tabItem { Label("Objectives", systemImage: "target") }
             
-            // TAB 4
+            // TAB 5
             NavigationStack {
                 AchievementsView()
             }

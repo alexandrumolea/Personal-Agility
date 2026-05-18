@@ -17,6 +17,7 @@ struct Projects_ManagerApp: App {
             let schema = Schema([
                 Project.self,
                 Client.self,
+                Opportunity.self,
                 Objective.self,
                 Win.self
             ])
