@@ -245,17 +245,66 @@ struct ProjectDetailView: View {
                     Section(header: Text("To Do")) {
                         ForEach($project.milestones) { $milestone in
                             if !milestone.isCompleted {
-                                HStack {
-                                    Image(systemName: "circle").foregroundColor(.gray)
-                                        .onTapGesture {
-                                            if !isReadOnly { withAnimation { milestone.isCompleted = true } }
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: "circle").foregroundColor(.gray)
+                                            .onTapGesture {
+                                                if !isReadOnly { withAnimation { milestone.isCompleted = true } }
+                                            }
+                                        
+                                        if isReadOnly {
+                                            Text(milestone.title)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        } else {
+                                            TextField("Task", text: $milestone.title, axis: .vertical)
                                         }
+                                    }
                                     
                                     if isReadOnly {
-                                        Text(milestone.title)
-                                            .fixedSize(horizontal: false, vertical: true)
+                                        if let executionDate = milestone.executionDate {
+                                            Label(executionDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar.badge.clock")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .padding(.leading, 28)
+                                        }
                                     } else {
-                                        TextField("Task", text: $milestone.title, axis: .vertical)
+                                        HStack(spacing: 10) {
+                                            Label("Execution", systemImage: "calendar.badge.clock")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                            
+                                            if milestone.executionDate == nil {
+                                                Button("Set date") {
+                                                    milestone.executionDate = Date()
+                                                }
+                                                .font(.caption.bold())
+                                                .buttonStyle(.borderless)
+                                            } else {
+                                                DatePicker("", selection: Binding(
+                                                    get: { milestone.executionDate ?? Date() },
+                                                    set: { milestone.executionDate = $0 }
+                                                ), displayedComponents: .date)
+                                                .labelsHidden()
+                                                .scaleEffect(0.85, anchor: .leading)
+                                                
+                                                Spacer()
+                                                
+                                                Button("Today") {
+                                                    milestone.executionDate = Date()
+                                                }
+                                                .font(.caption.bold())
+                                                .buttonStyle(.borderless)
+                                                
+                                                Button {
+                                                    milestone.executionDate = nil
+                                                } label: {
+                                                    Image(systemName: "xmark.circle.fill")
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                .buttonStyle(.borderless)
+                                            }
+                                        }
+                                        .padding(.leading, 28)
                                     }
                                 }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {

@@ -296,7 +296,7 @@ struct ClientDetailView: View {
                             .swipeActions {
                                 Button(role: .destructive) {
                                     if let idx = client.meetings.firstIndex(where: { $0.id == meeting.id }) {
-                                        withAnimation { client.meetings.remove(at: idx) }
+                                        withAnimation { _ = client.meetings.remove(at: idx) }
                                     }
                                 } label: { Label("Delete", systemImage: "trash") }
                             }
@@ -333,7 +333,7 @@ struct ClientDetailView: View {
                             .swipeActions {
                                 Button(role: .destructive) {
                                     if let idx = client.reflections.firstIndex(where: { $0.id == reflection.id }) {
-                                        withAnimation { client.reflections.remove(at: idx) }
+                                        withAnimation { _ = client.reflections.remove(at: idx) }
                                     }
                                 } label: { Label("Delete", systemImage: "trash") }
                             }

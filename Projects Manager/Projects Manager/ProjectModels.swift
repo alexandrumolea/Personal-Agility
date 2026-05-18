@@ -45,12 +45,44 @@ enum OpportunityStatus: String, Codable, CaseIterable {
     case won = "Won"
 }
 
+enum GymStatus: String, Codable, CaseIterable {
+    case undecided = "Undecided"
+    case going = "Going"
+    case notGoing = "Not Going"
+}
+
 // --- SUB-STRUCTURI (Shared between Legacy and New) ---
 struct Milestone: Identifiable, Hashable, Codable, Equatable {
     var id = UUID()
     var title: String
     var isCompleted: Bool = false
     var deadline: Date? = nil
+    var executionDate: Date? = nil
+    
+    init(id: UUID = UUID(), title: String, isCompleted: Bool = false, deadline: Date? = nil, executionDate: Date? = nil) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
+        self.deadline = deadline
+        self.executionDate = executionDate
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case isCompleted
+        case deadline
+        case executionDate
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try container.decode(String.self, forKey: .title)
+        isCompleted = try container.decodeIfPresent(Bool.self, forKey: .isCompleted) ?? false
+        deadline = try container.decodeIfPresent(Date.self, forKey: .deadline)
+        executionDate = try container.decodeIfPresent(Date.self, forKey: .executionDate)
+    }
 }
 
 struct Meeting: Identifiable, Codable, Equatable {
@@ -64,6 +96,12 @@ struct Reflection: Identifiable, Codable, Equatable {
     var id = UUID()
     var date: Date
     var text: String
+}
+
+struct DailyMealPhoto: Identifiable, Codable, Equatable {
+    var id = UUID()
+    var imageData: Data
+    var note: String = ""
 }
 
 // --- LEGACY STRUCTS (For Migration) ---
@@ -293,5 +331,40 @@ class Win {
         self.imageName = imageName
         self.imageData = imageData
         self.typeRaw = type.rawValue
+    }
+}
+
+@Model
+class DailyPlan {
+    var id: UUID = UUID()
+    var date: Date = Date()
+    var gymStatusRaw: String = GymStatus.undecided.rawValue
+    var gymIntention: String = ""
+    var foodIntention: String = ""
+    var mealPhotos: [DailyMealPhoto] = [] // Legacy payload kept for local store compatibility
+    @Relationship(deleteRule: .cascade, inverse: \DailyMealPhotoRecord.dailyPlan) var syncedMealPhotos: [DailyMealPhotoRecord]? = []
+    
+    var gymStatus: GymStatus {
+        get { GymStatus(rawValue: gymStatusRaw) ?? .undecided }
+        set { gymStatusRaw = newValue.rawValue }
+    }
+    
+    init(date: Date) {
+        self.date = Calendar.current.startOfDay(for: date)
+    }
+}
+
+@Model
+class DailyMealPhotoRecord {
+    var id: UUID = UUID()
+    @Attribute(.externalStorage) var imageData: Data? = nil
+    var note: String = ""
+    var createdAt: Date = Date()
+    var dailyPlan: DailyPlan?
+    
+    init(imageData: Data, note: String = "") {
+        self.imageData = imageData
+        self.note = note
+        self.createdAt = Date()
     }
 }

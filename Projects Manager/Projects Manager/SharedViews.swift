@@ -5,17 +5,23 @@ struct TimeProgressBar: View {
     var progress: Double
     var color: Color = .primary
     
+    private var clampedProgress: CGFloat {
+        guard progress.isFinite else { return 0 }
+        return CGFloat(min(max(progress, 0), 1))
+    }
+    
     var body: some View {
         GeometryReader { geometry in
+            let availableWidth = max(geometry.size.width, 0)
             ZStack(alignment: .leading) {
                 // Fundalul barei
                 Capsule()
-                    .frame(width: geometry.size.width, height: 6)
+                    .frame(width: availableWidth, height: 6)
                     .foregroundColor(Color.gray.opacity(0.2))
                 
                 // Partea plină
                 Capsule()
-                    .frame(width: min(CGFloat(self.progress) * geometry.size.width, geometry.size.width), height: 6)
+                    .frame(width: min(clampedProgress * availableWidth, availableWidth), height: 6)
                     .foregroundColor(color)
             }
         }

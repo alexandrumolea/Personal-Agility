@@ -5,11 +5,19 @@ struct ProjectListView: View {
     @Query private var projects: [Project]
     @Environment(\.modelContext) private var modelContext
     @State private var showAddSheet = false
+    @State private var selectedClient: Client? = nil
+    @State private var selectedProjectFromTimeline: Project? = nil
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             
             List {
+                DailyTimelineView(
+                    projects: projects,
+                    onClientTap: { client in selectedClient = client },
+                    onProjectTap: { project in selectedProjectFromTimeline = project }
+                )
+                
                 // --- WORK PROJECTS (SORTATE DUPĂ URGENȚĂ) ---
                 let workProjects = projects
                     .filter { $0.type == .work && !$0.isFinished }
@@ -73,7 +81,7 @@ struct ProjectListView: View {
                         .padding(.top, 50)
                 }
                 
-                Color.clear.frame(height: 80).listRowSeparator(.hidden).listRowBackground(Color.clear)
+                Color.clear.frame(height: 130).listRowSeparator(.hidden).listRowBackground(Color.clear)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -93,6 +101,12 @@ struct ProjectListView: View {
         .navigationTitle("Dashboard")
         .sheet(isPresented: $showAddSheet) {
             AddProjectView()
+        }
+        .navigationDestination(item: $selectedClient) { client in
+            ClientDetailView(client: client)
+        }
+        .navigationDestination(item: $selectedProjectFromTimeline) { project in
+            ProjectDetailView(project: project)
         }
     }
     

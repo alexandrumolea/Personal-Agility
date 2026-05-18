@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		C00C70DD2FBA515300FE4986 /* Projects Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Projects Manager.xcodeproj"; sourceTree = "<group>"; };
+		C00FD17E2FBB29FE00A552E0 /* Projects Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Projects Manager.xcodeproj"; sourceTree = "<group>"; };
 		C05B2BE02F09582A00C9DA60 /* Projects Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Projects Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0F86A722F4A29ED0069D551 /* Projects Manager.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Projects Manager.xcodeproj"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -45,6 +46,13 @@
 
 /* Begin PBXGroup section */
 		C00C70DF2FBA515300FE4986 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C00FD1802FBB29FE00A552E0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -134,6 +142,10 @@
 				{
 					ProductGroup = C00C70DF2FBA515300FE4986 /* Products */;
 					ProjectRef = C00C70DD2FBA515300FE4986 /* Projects Manager.xcodeproj */;
+				},
+				{
+					ProductGroup = C00FD1802FBB29FE00A552E0 /* Products */;
+					ProjectRef = C00FD17E2FBB29FE00A552E0 /* Projects Manager.xcodeproj */;
 				},
 			);
 			projectRoot = "";
