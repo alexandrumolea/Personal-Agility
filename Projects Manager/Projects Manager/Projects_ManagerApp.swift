@@ -20,7 +20,8 @@ struct Projects_ManagerApp: App {
             Objective.self,
             Win.self,
             DailyPlan.self,
-            DailyMealPhotoRecord.self
+            DailyMealPhotoRecord.self,
+            ProfileSettings.self
         ])
         let modelConfiguration = ModelConfiguration(
             schema: schema,

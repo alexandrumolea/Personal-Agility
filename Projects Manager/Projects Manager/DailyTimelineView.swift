@@ -11,25 +11,25 @@ struct DailyTimelineView: View {
     @Query private var dailyPlans: [DailyPlan]
     @Environment(\.modelContext) private var modelContext
     @State private var isExpanded = false
+    @State private var selectedDay = Calendar.current.startOfDay(for: Date())
     
-    private var today: Date { Calendar.current.startOfDay(for: Date()) }
-    private var tomorrow: Date { Calendar.current.date(byAdding: .day, value: 1, to: today) ?? today }
+    private var nextDay: Date { Calendar.current.date(byAdding: .day, value: 1, to: selectedDay) ?? selectedDay }
     
-    private var todayPlans: [DailyPlan] {
+    private var selectedDayPlans: [DailyPlan] {
         dailyPlans
-            .filter { Calendar.current.isDate($0.date, inSameDayAs: today) }
+            .filter { Calendar.current.isDate($0.date, inSameDayAs: selectedDay) }
             .sorted { $0.id.uuidString < $1.id.uuidString }
     }
     
     private var todaysPlan: DailyPlan? {
-        todayPlans.first
+        selectedDayPlans.first
     }
     
     private var contactsDueToday: [Client] {
         clients
             .filter { client in
                 guard let nextCheckInDate = client.nextCheckInDate else { return false }
-                return nextCheckInDate < tomorrow
+                return nextCheckInDate < nextDay
             }
             .sorted {
                 ($0.nextCheckInDate ?? .distantFuture) < ($1.nextCheckInDate ?? .distantFuture)
@@ -41,7 +41,7 @@ struct DailyTimelineView: View {
             project.milestones
                 .filter { milestone in
                     guard !project.isFinished, !milestone.isCompleted, let executionDate = milestone.executionDate else { return false }
-                    return Calendar.current.isDate(executionDate, inSameDayAs: today)
+                    return Calendar.current.isDate(executionDate, inSameDayAs: selectedDay)
                 }
                 .map { ProjectActionItem(project: project, milestone: $0) }
         }
@@ -63,7 +63,7 @@ struct DailyTimelineView: View {
                     Divider()
                     
                     if contactsDueToday.isEmpty && projectActionsDueToday.isEmpty {
-                        CompactEmptyRow(icon: "sparkle", title: "No extracted items for today", subtitle: "Contacts and project actions will appear here when they are due.")
+                        CompactEmptyRow(icon: "sparkle", title: "No extracted items for this day", subtitle: "Contacts and project actions will appear here when they are due.")
                     } else {
                         if !contactsDueToday.isEmpty {
                             contactsSection
@@ -87,9 +87,12 @@ struct DailyTimelineView: View {
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
-        .onAppear(perform: ensureSingleTodayPlan)
+        .onAppear(perform: ensureSinglePlanForSelectedDay)
         .onChange(of: dailyPlans.count) { _, _ in
-            ensureSingleTodayPlan()
+            ensureSinglePlanForSelectedDay()
+        }
+        .onChange(of: selectedDay) { _, _ in
+            ensureSinglePlanForSelectedDay()
         }
     }
     
@@ -103,15 +106,39 @@ struct DailyTimelineView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Today")
+                Text(selectedDayTitle)
                     .font(.headline)
                     .foregroundColor(.primary)
-                Text(todaySummary)
+                Text(selectedDaySummary)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
             Spacer()
+            
+            HStack(spacing: 6) {
+                Button {
+                    shiftDay(by: -1)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.caption.bold())
+                        .frame(width: 26, height: 26)
+                        .background(Color.secondary.opacity(0.12))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                
+                Button {
+                    shiftDay(by: 1)
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.bold())
+                        .frame(width: 26, height: 26)
+                        .background(Color.secondary.opacity(0.12))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
             
             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                 .font(.caption.bold())
@@ -119,12 +146,16 @@ struct DailyTimelineView: View {
         }
     }
     
-    private var todaySummary: String {
+    private var selectedDayTitle: String {
+        Calendar.current.isDateInToday(selectedDay) ? "Today" : selectedDay.formatted(.dateTime.weekday(.wide).day().month(.wide))
+    }
+    
+    private var selectedDaySummary: String {
         let contacts = contactsDueToday.count
         let actions = projectActionsDueToday.count
         
         if contacts == 0 && actions == 0 {
-            return Date().formatted(.dateTime.weekday(.wide).day().month(.wide))
+            return selectedDay.formatted(.dateTime.day().month().year())
         }
         
         var parts: [String] = []
@@ -217,20 +248,26 @@ struct DailyTimelineView: View {
         }
     }
     
-    private func ensureSingleTodayPlan() {
-        if todayPlans.isEmpty {
-            modelContext.insert(DailyPlan(date: today))
+    private func ensureSinglePlanForSelectedDay() {
+        if selectedDayPlans.isEmpty {
+            modelContext.insert(DailyPlan(date: selectedDay))
             try? modelContext.save()
             return
         }
         
-        guard let canonicalPlan = todayPlans.first, todayPlans.count > 1 else { return }
+        guard let canonicalPlan = selectedDayPlans.first, selectedDayPlans.count > 1 else { return }
         
-        let duplicatePlans = Array(todayPlans.dropFirst())
+        let duplicatePlans = Array(selectedDayPlans.dropFirst())
         var didMutate = false
         
         // Keep meaningful values from duplicates before deleting them.
         for duplicate in duplicatePlans {
+            if canonicalPlan.dailyIntention.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                !duplicate.dailyIntention.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                canonicalPlan.dailyIntention = duplicate.dailyIntention
+                didMutate = true
+            }
+            
             if canonicalPlan.gymStatus == .undecided && duplicate.gymStatus != .undecided {
                 canonicalPlan.gymStatus = duplicate.gymStatus
                 didMutate = true
@@ -246,19 +283,17 @@ struct DailyTimelineView: View {
                 didMutate = true
             }
             
+            if duplicate.meditationMinutes > canonicalPlan.meditationMinutes {
+                canonicalPlan.meditationMinutes = duplicate.meditationMinutes
+                didMutate = true
+            }
+            
             for photo in (duplicate.syncedMealPhotos ?? []) {
                 if !(canonicalPlan.syncedMealPhotos ?? []).contains(where: { $0.id == photo.id }) {
                     if canonicalPlan.syncedMealPhotos == nil {
                         canonicalPlan.syncedMealPhotos = []
                     }
                     canonicalPlan.syncedMealPhotos?.append(photo)
-                    didMutate = true
-                }
-            }
-            
-            for legacyPhoto in duplicate.mealPhotos {
-                if !canonicalPlan.mealPhotos.contains(where: { $0.id == legacyPhoto.id }) {
-                    canonicalPlan.mealPhotos.append(legacyPhoto)
                     didMutate = true
                 }
             }
@@ -274,13 +309,18 @@ struct DailyTimelineView: View {
     
     private func contactSubtitle(for client: Client) -> String {
         guard let nextCheckInDate = client.nextCheckInDate else { return "No schedule" }
-        if Calendar.current.isDate(nextCheckInDate, inSameDayAs: today) {
-            return "Due today"
+        if Calendar.current.isDate(nextCheckInDate, inSameDayAs: selectedDay) {
+            return "Due on selected day"
         }
-        if nextCheckInDate < today {
+        if nextCheckInDate < selectedDay {
             return "Overdue since \(nextCheckInDate.formatted(date: .abbreviated, time: .omitted))"
         }
         return "Next: \(nextCheckInDate.formatted(date: .abbreviated, time: .omitted))"
+    }
+    
+    private func shiftDay(by value: Int) {
+        guard let shifted = Calendar.current.date(byAdding: .day, value: value, to: selectedDay) else { return }
+        selectedDay = Calendar.current.startOfDay(for: shifted)
     }
     
     private func markActionComplete(_ item: ProjectActionItem) {
@@ -339,18 +379,102 @@ private struct CompactEmptyRow: View {
 
 private struct DailyPlanControls: View {
     @Bindable var dailyPlan: DailyPlan
+    @Query(
+        filter: #Predicate<ProfileSettings> { $0.singletonKey == "default" }
+    ) private var allSettings: [ProfileSettings]
     @Environment(\.modelContext) private var modelContext
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @FocusState private var focusedIntent: IntentField?
     
     private enum IntentField {
+        case day
         case gym
         case food
     }
     
+    private var meditationGranularity: Int {
+        allSettings.first?.meditationGranularityMinutes ?? 5
+    }
+    
+    private var meditationGoal: Int {
+        allSettings.first?.meditationGoalMinutes ?? 30
+    }
+    
+    private var meditationProgress: Double {
+        guard meditationGoal > 0 else { return 0 }
+        return min(Double(max(dailyPlan.meditationMinutes, 0)) / Double(meditationGoal), 1.0)
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 24) {
             Divider()
+                .padding(.bottom, 4)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                SectionTitle(icon: "sun.horizon.fill", title: "Daily intention")
+                
+                TextField("What matters most today?", text: $dailyPlan.dailyIntention, axis: .vertical)
+                    .lineLimit(1...3)
+                    .focused($focusedIntent, equals: .day)
+                    .submitLabel(.done)
+                    .padding(10)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .padding(.top, 6)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                SectionTitle(icon: "brain.head.profile", title: "Meditation")
+                
+                HStack(spacing: 10) {
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.secondary.opacity(0.15))
+                            .frame(height: 22)
+                        
+                        GeometryReader { proxy in
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.green.opacity(0.75))
+                                .frame(width: max(0, min(proxy.size.width * meditationProgress, proxy.size.width)), height: 22)
+                        }
+                    }
+                    .frame(height: 22)
+                    
+                    Text("\(dailyPlan.meditationMinutes)m")
+                        .font(.subheadline.bold())
+                        .monospacedDigit()
+                }
+                
+                HStack(spacing: 8) {
+                    Button("-\(meditationGranularity)") {
+                        dailyPlan.meditationMinutes = max(0, dailyPlan.meditationMinutes - meditationGranularity)
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption.bold())
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    
+                    Text("Step \(meditationGranularity)m")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                    
+                    Button("+\(meditationGranularity)") {
+                        dailyPlan.meditationMinutes += meditationGranularity
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption.bold())
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding(.top, 6)
             
             VStack(alignment: .leading, spacing: 8) {
                 SectionTitle(icon: "figure.strengthtraining.traditional", title: "Gym")
@@ -370,6 +494,7 @@ private struct DailyPlanControls: View {
                     .background(Color.secondary.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
+            .padding(.top, 6)
             
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -422,6 +547,7 @@ private struct DailyPlanControls: View {
                     }
                 }
             }
+            .padding(.top, 6)
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -453,11 +579,10 @@ private struct DailyPlanControls: View {
             }
         }
         .onChange(of: dailyPlan.gymStatus) { _, _ in try? modelContext.save() }
+        .onChange(of: dailyPlan.dailyIntention) { _, _ in try? modelContext.save() }
         .onChange(of: dailyPlan.gymIntention) { _, _ in try? modelContext.save() }
         .onChange(of: dailyPlan.foodIntention) { _, _ in try? modelContext.save() }
-        .onAppear {
-            migrateLegacyMealPhotosIfNeeded()
-        }
+        .onChange(of: dailyPlan.meditationMinutes) { _, _ in try? modelContext.save() }
     }
     
     private func removeMealPhoto(_ photo: DailyMealPhotoRecord) {
@@ -465,23 +590,6 @@ private struct DailyPlanControls: View {
         withAnimation {
             _ = dailyPlan.syncedMealPhotos?.remove(at: index)
             modelContext.delete(photo)
-            try? modelContext.save()
-        }
-    }
-    
-    private func migrateLegacyMealPhotosIfNeeded() {
-        guard (dailyPlan.syncedMealPhotos ?? []).isEmpty, !dailyPlan.mealPhotos.isEmpty else { return }
-        
-        withAnimation {
-            for legacyPhoto in dailyPlan.mealPhotos {
-                let photo = DailyMealPhotoRecord(imageData: legacyPhoto.imageData, note: legacyPhoto.note)
-                modelContext.insert(photo)
-                if dailyPlan.syncedMealPhotos == nil {
-                    dailyPlan.syncedMealPhotos = []
-                }
-                dailyPlan.syncedMealPhotos?.append(photo)
-            }
-            dailyPlan.mealPhotos.removeAll()
             try? modelContext.save()
         }
     }

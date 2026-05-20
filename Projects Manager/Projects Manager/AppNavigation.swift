@@ -6,6 +6,7 @@ enum AppScreen: Hashable, CaseIterable, Identifiable {
     case opportunities
     case objectives
     case hallOfFame
+    case profile
     
     var id: Self { self }
     
@@ -16,6 +17,7 @@ enum AppScreen: Hashable, CaseIterable, Identifiable {
         case .opportunities: return "Opportunities"
         case .objectives: return "Objectives"
         case .hallOfFame: return "Hall of Fame"
+        case .profile: return "Profile"
         }
     }
     
@@ -26,6 +28,7 @@ enum AppScreen: Hashable, CaseIterable, Identifiable {
         case .opportunities: return "eurosign.circle.fill"
         case .objectives: return "target"
         case .hallOfFame: return "trophy.fill"
+        case .profile: return "person.crop.circle"
         }
     }
 }

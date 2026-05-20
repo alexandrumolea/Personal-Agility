@@ -98,66 +98,6 @@ struct Reflection: Identifiable, Codable, Equatable {
     var text: String
 }
 
-struct DailyMealPhoto: Identifiable, Codable, Equatable {
-    var id = UUID()
-    var imageData: Data
-    var note: String = ""
-}
-
-// --- LEGACY STRUCTS (For Migration) ---
-struct LegacyProject: Identifiable, Codable {
-    var id = UUID()
-    var title: String
-    var successCriteria: String = ""
-    var imageName: String
-    var imageData: Data? = nil
-    var type: ProjectType = .personal
-    var isFinished: Bool = false
-    var startDate: Date
-    var dueDate: Date
-    var milestones: [Milestone]
-    var reflections: [Reflection] = []
-}
-
-struct LegacyClient: Identifiable, Codable {
-    var id = UUID()
-    var name: String
-    var role: String = ""
-    var frequency: CheckInFrequency = .monthly
-    var meetings: [Meeting] = []
-}
-
-struct LegacyObjective: Identifiable, Codable {
-    var id = UUID()
-    var title: String
-    var successCriteria: String = ""
-    var imageName: String = "target"
-    var imageData: Data? = nil
-    var type: ObjectiveType = .personalGrowth
-    var isFinished: Bool = false
-    var startDate: Date
-    var dueDate: Date
-    var milestones: [Milestone]
-    var reflections: [Reflection] = []
-}
-
-struct LegacyWin: Identifiable, Codable {
-    var id = UUID()
-    var title: String
-    var date: Date
-    var imageName: String = "trophy.fill"
-    var imageData: Data? = nil
-    var type: ObjectiveType = .personalGrowth
-    var whatDidYouDo: String = ""
-    var uncontrollableFactors: String = ""
-    var learnAccomplishing: String = ""
-    var learnAboutSelf: String = ""
-    var useLessonsElsewhere: String = ""
-    var helpBiggerObjectives: String = ""
-    var celebration: String = ""
-    var notes: String = ""
-}
-
 // --- SWIFTDATA MODELS ---
 
 @Model
@@ -338,10 +278,11 @@ class Win {
 class DailyPlan {
     var id: UUID = UUID()
     var date: Date = Date()
+    var dailyIntention: String = ""
     var gymStatusRaw: String = GymStatus.undecided.rawValue
     var gymIntention: String = ""
     var foodIntention: String = ""
-    var mealPhotos: [DailyMealPhoto] = [] // Legacy payload kept for local store compatibility
+    var meditationMinutes: Int = 0
     @Relationship(deleteRule: .cascade, inverse: \DailyMealPhotoRecord.dailyPlan) var syncedMealPhotos: [DailyMealPhotoRecord]? = []
     
     var gymStatus: GymStatus {
@@ -366,5 +307,20 @@ class DailyMealPhotoRecord {
         self.imageData = imageData
         self.note = note
         self.createdAt = Date()
+    }
+}
+
+@Model
+class ProfileSettings {
+    var singletonKey: String = ProfileSettings.defaultKey
+    var id: UUID = UUID()
+    var meditationGranularityMinutes: Int = 5
+    var meditationGoalMinutes: Int = 30
+    var updatedAt: Date = Date()
+    
+    static let defaultKey = "default"
+    
+    init(singletonKey: String = ProfileSettings.defaultKey) {
+        self.singletonKey = singletonKey
     }
 }

@@ -36,6 +36,8 @@ struct AppSplitView: View {
                 NavigationStack {
                     AchievementsView()
                 }
+            case .profile:
+                ProfileView()
             }
         }
     }
@@ -67,6 +69,10 @@ struct AppTabView: View {
                 AchievementsView()
             }
             .tabItem { Label("Hall of Fame", systemImage: "trophy.fill") }
+            
+            // TAB 6
+            ProfileView()
+            .tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
     }
 }
